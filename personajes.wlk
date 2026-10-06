@@ -2,7 +2,7 @@ import wollok.game.*
 
 object jugador{
     var property position = game.at(1, 1)
-    
+    var property vida = 100
     method image() = "player.png"
 
     method moverArriba() {

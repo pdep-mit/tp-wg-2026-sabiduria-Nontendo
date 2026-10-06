@@ -1,12 +1,13 @@
 import wollok.game.*
-import example.*
+import personajes.*
 
 program NombreDeJuego {
 	game.title("Grupo: Nontendo | Nombre de jueguito")
 	game.height(10)
 	game.width(10)
 
-	game.addVisual(player)
+	game.addVisual(jugador)
 
 	game.start()
 }
+
