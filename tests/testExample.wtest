@@ -5,7 +5,7 @@ import personajes.*
 describe "groupo de tests" {
 
   test "Payer comeinza en el centro del tabler" {
-    assert.equals(game.center(), jugador.position())
+    assert.equals(game.at(1, 1), jugador.position())
   }
 
 }
