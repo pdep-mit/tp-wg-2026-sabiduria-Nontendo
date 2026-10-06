@@ -1,13 +1,13 @@
 # Wollok Game: Título de juego
 
-**Grupo:** Nombre de Grupo
+**Grupo:** Nontendo
 
 **Integrantes:**
-- Nombre y Apellido
-- Nombre y Apellido
-- Nombre y Apellido
-- Nombre y Apellido
-- Nombre y Apellido
+- Lautaro Feruglio
+- Agustin Eduardo Gomez Utinko
+- Ignacio Mariñansky
+- Mauro Lautaro Montoya
+- Facundo Sanzo
 
 ## Consignas
 
