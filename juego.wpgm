@@ -2,8 +2,7 @@ import wollok.game.*
 import example.*
 
 program NombreDeJuego {
-	// TODO: Cambiar esto por lo que necesiten
-	game.title("Grupo: ... | Nombre de jueguito")
+	game.title("Grupo: Nontendo | Nombre de jueguito")
 	game.height(10)
 	game.width(10)
 
