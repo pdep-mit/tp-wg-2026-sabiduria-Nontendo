@@ -1,4 +1,5 @@
 import wollok.game.*
+import juego.*
 
 object jugador{
     var property position = game.at(1, 1)

@@ -1,12 +1,17 @@
 import wollok.game.*
 import personajes.*
+import configuraciones.*
+import obstaculos.*
 
 program NombreDeJuego {
 	game.title("Grupo: Nontendo | Nombre de jueguito")
-	game.height(10)
-	game.width(10)
-
+	game.height(15)
+	game.width(15)
+	game.boardGround("fondoPrueba1.png")
 	game.addVisual(jugador)
+	
+	configuracion.movimientos()
+	configuracion.agregarObstaculos()
 
 	game.start()
 }
