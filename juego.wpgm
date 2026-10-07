@@ -1,18 +1,14 @@
 import wollok.game.*
-import personajes.*
 import configuraciones.*
-import obstaculos.*
+import sala.*
 
 program NombreDeJuego {
-	game.title("Grupo: Nontendo | Nombre de jueguito")
-	game.height(15)
-	game.width(15)
-	game.boardGround("fondoPrueba1.png")
-	game.addVisual(jugador)
-	
-	configuracion.movimientos()
-	configuracion.agregarObstaculos()
-
-	game.start()
+  game.title("Nontendo | La sala de los tres sellos | Checkpoint 1")
+  game.height(12)
+  game.width(16)
+  game.cellSize(48)
+  game.boardGround("zelda/sala.png")
+  sala.iniciar()
+  configuracion.movimientos()
+  game.start()
 }
-

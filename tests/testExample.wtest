@@ -1,11 +1,11 @@
 // Archivo de tests de referencia, borrar luego de desarrollar propios
-import juego.*
+import wollok.game.*
 import personajes.*
 
 describe "groupo de tests" {
 
-  test "Payer comeinza en el centro del tabler" {
-    assert.equals(game.at(1, 1), jugador.position())
+  test "El jugador comienza en la entrada de la sala" {
+    assert.equals(game.at(2, 2), jugador.position())
   }
 
 }
