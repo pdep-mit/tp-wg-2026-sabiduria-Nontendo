@@ -1,5 +1,15 @@
 import wollok.game.*
 import sala.*
+class Llave {
+  const property position
+  method nombre() = "Llave"
+  method image() = "zelda/llave.png"
+
+  method chocarCon(personaje) {
+    personaje.guardar(self)
+    game.removeVisual(self)
+  }
+}
 
 class Boton {
   const property numero
@@ -7,8 +17,12 @@ class Boton {
   var property activado = false
   method image() = "zelda/boton-" + numero + (if (activado) "-on.png" else ".png")
   method disponible() = true
-  method interactuar(personaje) { puzzle.presionar(self) }
+  
+  method interactuar(personaje) { 
+    puzzle.presionar(self) 
+  }
 }
+
 object puzzle {
   var property progreso = 0
   const property botones = [
@@ -18,8 +32,9 @@ object puzzle {
   ]
   method resuelto() = progreso == botones.size()
   method presionar(boton) {
-    if (self.resuelto()) sala.informar("Puzzle completo. Busca la llave a la derecha.")
-    else if (boton.numero() == progreso + 1) {
+    if (self.resuelto()) {
+      sala.informar("Puzzle completo. Busca la llave a la derecha.")
+    } else if (boton.numero() == progreso + 1) {
       boton.activado(true)
       progreso += 1
       sala.aplicarEfecto(boton.numero())
@@ -31,6 +46,6 @@ object puzzle {
   }
   method reiniciar() {
     progreso = 0
-    botones.forEach({ boton => boton.activado(false) })
+    botones.forEach({ b => b.activado(false) })
   }
 }
