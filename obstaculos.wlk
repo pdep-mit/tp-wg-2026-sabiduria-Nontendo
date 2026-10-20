@@ -1,9 +1,21 @@
 import wollok.game.*
 
-class Pincho {
+class ElementoDanino {
   const property position
+  method chocarCon(personaje) {
+    if (self.estaActivo()) {
+      personaje.recibirDanio(self.danioQueCausa())
+      self.efectoAdicional(personaje)
+    }
+  }
+  method estaActivo() = true
+  method danioQueCausa() 
+  method efectoAdicional(personaje) {} 
+}
+class Pincho inherits ElementoDanino {
   method image() = "zelda/pinchos.png"
-  method daniar(personaje) { personaje.recibirDanio() }
+  
+  override method danioQueCausa() = 1
 }
 class Muro {
   const property position
