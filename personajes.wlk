@@ -6,7 +6,9 @@ object jugador {
   var property vida = 3
   var direccion = "abajo"
   const inventario = []
+  
   method image() = "zelda/link-" + direccion + ".png"
+  
   method moverArriba() { self.moverA(position.up(1), "arriba") }
   method moverAbajo() { self.moverA(position.down(1), "abajo") }
   method moverIzquierda() { self.moverA(position.left(1), "izquierda") }
@@ -21,14 +23,18 @@ object jugador {
       }
     }
   }
+  //Inventario metodos
   method guardar(objeto) { inventario.add(objeto) }
   method tiene(nombre) = inventario.any({ objeto => objeto.nombre() == nombre })
   method inventarioTexto() = if (inventario.isEmpty()) "vacio" else inventario.map({ objeto => objeto.nombre() }).join(" + ")
-  method recibirDanio() {
-    vida = (vida - 1).max(0)
+
+//Recibir daño modificado
+  method recibirDanio(cantidad) {
+    vida = (vida - cantidad).max(0)
     if (vida == 0) sala.perder()
-    else sala.informar("Pinchos: perdiste un corazon. Cuidado!")
+    else sala.informar("Recibiste daño: perdiste salud. ¡Cuidado!")
   }
+
   method reiniciar() {
     position = game.at(2, 2)
     vida = 3
