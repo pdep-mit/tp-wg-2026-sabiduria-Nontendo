@@ -3,76 +3,168 @@ import personajes.*
 import obstaculos.*
 import objetos.*
 import puzzle.*
+import panel.*
+import empuje.*
+import oscuridad.*
+import combate.*
 
-object sala {
+class Sala {
   var estado = "jugando"
-  var property mensaje = "Sala de los tres sellos | Activa 1 > 2 > 3"
-  var llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
-  var recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
-  const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
-  const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
+  var property mensaje = ""
+
+  method mensajeInicial()
+  method fondo()
+  method obstaculos()
+  method interactuables()
+  method elementosDeEscena()
+  method registrarColisiones() {}
+  method prepararEstadoGlobal() {}
+  method presionarCable(etiqueta) {}
+  method alMoverse() {}
+  method movimientoBloqueado() = false
+  method hayCajaEn(posicion) = false
+
   method enCurso() = estado == "jugando"
   method permitePasar(posicion) =
-    posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
-    and !muros.any({ muro => muro.position() == posicion })
-    and (barrera.abierta() or posicion != barrera.position())
-    and posicion != antorcha.position() and posicion != salida.position()
-  method alPisar(posicion) {
-    pinchos.filter({ pincho => pincho.position() == posicion }).forEach({ pincho => pincho.daniar(jugador) })
-  }
-  // E funciona en la propia celda o a una celda de distancia, sin diagonales.
+    !self.movimientoBloqueado()
+    and posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
+    and !self.obstaculos().any({ obstaculo => obstaculo.bloqueaPaso(posicion) })
+  method puedeAvanzarA(destino, siguiente) = self.permitePasar(destino)
   method interactuar() {
     if (self.enCurso()) {
       const cercanos = self.interactuables().filter({ objeto => objeto.disponible() and objeto.position().distance(jugador.position()) <= 1 })
-      if (cercanos.isEmpty()) self.informar("Acercate a un boton, un objeto o la salida y pulsa E.")
+      if (cercanos.isEmpty()) self.informar("Acercate a algo interactuable y pulsa E.")
       else cercanos.min({ objeto => objeto.position().distance(jugador.position()) }).interactuar(jugador)
     }
-  }
-  method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (puzzle.resuelto()) [llave] else [])
-  method aplicarEfecto(numero) {
-    if (numero == 1) {
-      antorcha.encendida(true)
-      self.informar("1/3: antorcha encendida! Ahora activa el boton 2.")
-    } else if (numero == 2) {
-      barrera.abierta(true)
-      self.informar("2/3: barrera abierta! Falta el boton 3.")
-    } else {
-      game.addVisual(llave)
-      self.informar("3/3: aparecio la llave! Recogela con E y abri la salida.")
-    }
-  }
-  method restaurarEfectos() {
-    antorcha.encendida(false)
-    barrera.abierta(false)
   }
   method informar(texto) { mensaje = texto }
   method ganar() {
     estado = "ganado"
-    self.informar("GANASTE! Saliste con la llave. R para volver a jugar.")
+    self.informar("GANASTE! R para volver a jugar.")
   }
   method perder() {
     estado = "perdido"
     self.informar("SIN VIDA! R para reiniciar la demo.")
   }
   method iniciar() {
-    muros.forEach({ muro => game.addVisual(muro) })
-    pinchos.forEach({ pincho => game.addVisual(pincho) })
-    puzzle.botones().forEach({ boton => game.addVisual(boton) })
-    [barrera, antorcha, salida, recuerdo, jugador, cartelEstado, cartelVida, cartelInventario].forEach({ visual => game.addVisual(visual) })
-  }
-  method reiniciar() {
-    game.clear()
-    jugador.reiniciar()
-    puzzle.reiniciar()
-    self.restaurarEfectos()
-    salida.abierta(false)
-    llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
-    recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
+    game.boardGround(self.fondo())
+    self.prepararEstadoGlobal()
     estado = "jugando"
-    self.informar("Sala de los tres sellos | Activa 1 > 2 > 3")
-    self.iniciar()
+    mensaje = self.mensajeInicial()
+    self.elementosDeEscena().forEach({ elemento => game.addVisual(elemento) })
+    [jugador, cartelEstado, cartelVida, cartelInventario, vistaCombate].forEach({ visual => game.addVisual(visual) })
+    self.registrarColisiones()
   }
 }
+
+class SalaDeLosTresSellos inherits Sala {
+  const llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
+  const recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
+  const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
+  const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
+  const salida = new Salida(position = game.at(14, 8), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
+  var llaveVisible = false
+
+  override method mensajeInicial() = "Sala de los tres sellos | Activa 1 > 2 > 3"
+  override method fondo() = "zelda/sala.png"
+  override method prepararEstadoGlobal() {
+    puzzle.reiniciar()
+    antorcha.encendida(false)
+    barrera.abierta(false)
+  }
+  override method obstaculos() = muros + [barrera, antorcha, salida]
+  override method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (llaveVisible) [llave] else [])
+  override method elementosDeEscena() = muros + pinchos + puzzle.botones() + [barrera, antorcha, salida, recuerdo]
+  override method registrarColisiones() {
+    pinchos.forEach({ pincho => game.onCollideDo(pincho, { elemento => pincho.chocarCon(elemento) }) })
+  }
+  method revelarLlave() {
+    llaveVisible = true
+    game.addVisual(llave)
+  }
+}
+
+class SalaDelApagon inherits Sala {
+  const panel = new PanelDeCables(position = game.at(2, 7), pares = [["1", "D"], ["2", "A"], ["3", "F"], ["4", "S"]], alResolver = { self.revelarResto() })
+  const niebla = new Niebla()
+  const puzzleDeCajas = new PuzzleDeCajas(resuelta = { self.salidaYaAbierta() })
+  const escudo = new Escudo(nombre = "escudo", sprite = "zelda/escudo.png", position = game.at(12, 3))
+  const salida = new Salida(position = game.at(14, 8), condicion = { self.salidaYaAbierta() }, alCruzar = { sala.ganar() })
+  var restoVisible = false
+  var salidaDesbloqueada = false
+
+  override method mensajeInicial() = "Sala del apagon | Esta oscuro. Se ve algo en la pared, acercate."
+  override method fondo() = "zelda/sala2.png"
+  override method obstaculos() = [salida]
+  override method interactuables() = [salida] + panel.interactuable() + (if (restoVisible) [escudo] else [])
+  override method elementosDeEscena() = [salida] + panel.elementosIniciales() + niebla.elementos()
+  override method movimientoBloqueado() = panel.bloqueaMovimiento()
+  override method hayCajaEn(posicion) = restoVisible and puzzleDeCajas.hayCajaEn(posicion)
+  override method presionarCable(etiqueta) { panel.presionar(etiqueta) }
+  override method alMoverse() {
+    if (restoVisible and !salidaDesbloqueada and puzzleDeCajas.resuelto()) {
+      salidaDesbloqueada = true
+      salida.actualizarEstado()
+      sala.informar("Las tres losas estan pisadas! La salida se abrio permanentemente.")
+    }
+  }
+  override method puedeAvanzarA(destino, siguiente) =
+    puzzleDeCajas.intentarEmpujar(destino, siguiente, { posicion => self.permitePasar(posicion) and !combate.hayEnemigoEn(posicion) })
+
+  method salidaYaAbierta() = salidaDesbloqueada
+  method revelarResto() {
+    restoVisible = true
+    niebla.ocultar()
+    game.addVisual(escudo)
+    puzzleDeCajas.elementos().forEach({ elemento => game.addVisual(elemento) })
+    game.removeVisual(jugador)
+    game.addVisual(jugador)
+    sala.informar("Luz restaurada. Empuja las cajas sobre dos losas y parate vos en la tercera.")
+    self.activarEnemigo()
+  }
+  method activarEnemigo() {
+    new Enemigo(position = game.at(11, 6), identificador = "guardia1").aparecer()
+    new Enemigo(position = game.at(13, 6), identificador = "guardia2").aparecer()
+  }
+}
+
+object mazmorra {
+  var property salaActual = new SalaDeLosTresSellos()
+  var alLimpiar = {}
+  method configurarAlLimpiar(bloque) { alLimpiar = bloque }
+  method reiniciarTodo() {
+    game.clear()
+    jugador.reiniciar()
+    salaActual = new SalaDeLosTresSellos()
+    salaActual.iniciar()
+    alLimpiar.apply()
+  }
+  method avanzar() {
+    combate.reiniciar()
+    game.clear()
+    jugador.position(game.at(2, 2))
+    salaActual = new SalaDelApagon()
+    salaActual.iniciar()
+    alLimpiar.apply()
+  }
+}
+
+object sala {
+  method actual() = mazmorra.salaActual()
+  method enCurso() = self.actual().enCurso()
+  method mensaje() = self.actual().mensaje()
+  method informar(texto) { self.actual().informar(texto) }
+  method permitePasar(posicion) = self.actual().permitePasar(posicion)
+  method puedeAvanzarA(destino, siguiente) = self.actual().puedeAvanzarA(destino, siguiente)
+  method interactuar() { self.actual().interactuar() }
+  method presionarCable(etiqueta) { self.actual().presionarCable(etiqueta) }
+  method alMoverse() { self.actual().alMoverse() }
+  method ganar() { self.actual().ganar() }
+  method perder() { self.actual().perder() }
+  method iniciar() { self.actual().iniciar() }
+  method revelarLlave() { self.actual().revelarLlave() }
+}
+
 object cartelEstado {
   method position() = game.at(7.5, 11)
   method text() = sala.mensaje()
@@ -80,11 +172,11 @@ object cartelEstado {
 }
 object cartelVida {
   method position() = game.at(2, 10)
-  method text() = "VIDA: " + jugador.vida() + " / 3"
+  method text() = if (jugador.enCombate()) "" else "VIDA: " + jugador.vida() + " / 3"
   method textColor() = "FF9999"
 }
 object cartelInventario {
   method position() = game.at(9, 10)
-  method text() = "INVENTARIO: " + jugador.inventarioTexto()
+  method text() = if (jugador.enCombate()) "" else "INVENTARIO: " + jugador.inventarioTexto()
   method textColor() = "B8F0CA"
 }
