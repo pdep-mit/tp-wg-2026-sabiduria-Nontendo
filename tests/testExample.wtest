@@ -11,9 +11,9 @@ describe "groupo de tests" {
 
   test "El jugador comienza con 4 de vida y pierde vida al recibir daño" {
   jugador.reiniciar()
-  assert.equals(3, jugador.vida())
+  assert.equals(4, jugador.vida())
   jugador.recibirDanio(1)
-  assert.equals(2, jugador.vida())
+  assert.equals(3, jugador.vida())
   }
 
   test "El jugador puede guardar un objeto en su inventario y verificarlo" {
@@ -54,7 +54,7 @@ describe "groupo de tests" {
     pincho.chocarCon(jugador)
     assert.equals(2, jugador.vida())
   }
-  
+
   test "El panel de cables conecta un par válido y se resuelve" {
     const panel = new PanelDeCables(
       position = game.at(2, 7), 
@@ -67,5 +67,11 @@ describe "groupo de tests" {
     assert.that(panel.resuelto())
   }
 
+  test "La barrera cambia su capacidad de bloquear el paso según si está abierta o cerrada" {
+    barrera.abierta(false)
+    assert.that(barrera.bloqueaPaso(game.at(10, 4)))
+    barrera.abierta(true)
+    assert.notThat(barrera.bloqueaPaso(game.at(10, 4)))
+  }
 }
 
