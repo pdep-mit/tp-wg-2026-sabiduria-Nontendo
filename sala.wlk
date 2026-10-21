@@ -11,14 +11,14 @@ object sala {
   var recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
   const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
   const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
+
   method enCurso() = estado == "jugando"
+  method obstaculos() = muros + [barrera, antorcha, salida]
   method permitePasar(posicion) =
     posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
-    and !muros.any({ muro => muro.position() == posicion })
-    and (barrera.abierta() or posicion != barrera.position())
-    and posicion != antorcha.position() and posicion != salida.position()
+    and !self.obstaculos().any({ obstaculo => obstaculo.bloqueaPaso(posicion) })
   method alPisar(posicion) {
-    pinchos.filter({ pincho => pincho.position() == posicion }).forEach({ pincho => pincho.daniar(jugador) })
+    pinchos.filter({ pincho => pincho.position() == posicion }).forEach({ pincho => pincho.chocarCon(jugador) })
   }
   // E funciona en la propia celda o a una celda de distancia, sin diagonales.
   method interactuar() {
@@ -29,22 +29,7 @@ object sala {
     }
   }
   method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (puzzle.resuelto()) [llave] else [])
-  method aplicarEfecto(numero) {
-    if (numero == 1) {
-      antorcha.encendida(true)
-      self.informar("1/3: antorcha encendida! Ahora activa el boton 2.")
-    } else if (numero == 2) {
-      barrera.abierta(true)
-      self.informar("2/3: barrera abierta! Falta el boton 3.")
-    } else {
-      game.addVisual(llave)
-      self.informar("3/3: aparecio la llave! Recogela con E y abri la salida.")
-    }
-  }
-  method restaurarEfectos() {
-    antorcha.encendida(false)
-    barrera.abierta(false)
-  }
+  method revelarLlave() { game.addVisual(llave) }
   method informar(texto) { mensaje = texto }
   method ganar() {
     estado = "ganado"
@@ -64,7 +49,6 @@ object sala {
     game.clear()
     jugador.reiniciar()
     puzzle.reiniciar()
-    self.restaurarEfectos()
     salida.abierta(false)
     llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
     recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))

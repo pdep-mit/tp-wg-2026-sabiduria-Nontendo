@@ -1,7 +1,6 @@
 import wollok.game.*
 import sala.*
 
-// Llaves y otros objetos comparten el mismo comportamiento de recoleccion.
 class ObjetoRecogible {
   const property nombre
   const property sprite
@@ -18,11 +17,13 @@ class ObjetoRecogible {
     }
   }
 }
+
 object salida {
   var property abierta = false
   method position() = game.at(14, 7)
   method image() = if (abierta) "zelda/salida-abierta.png" else "zelda/salida.png"
   method disponible() = true
+  method bloqueaPaso(posicion) = self.position() == posicion
   method interactuar(personaje) {
     if (personaje.tiene("llave")) {
       abierta = true
