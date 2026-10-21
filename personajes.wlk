@@ -176,7 +176,7 @@ object jugador inherits Combatiente {
 
 class Enemigo inherits Combatiente {
   var property position
-  const property habilidad = new Fisico(nombre = "Mordida", danio = 1)
+  const property habilidad = new Fisico(nombre = "Mordida", danio = 0.5)
   var visible = false
   const property identificador = "enemigo"
   var versionMovimiento = 0
@@ -188,7 +188,7 @@ class Enemigo inherits Combatiente {
     game.addVisual(self)
     game.onTick(250, identificador, { self.detectarJugador() })
   }
-  method jugadorEstaCerca() = combate.distancia(position, jugador.position()) < 5
+  method jugadorEstaCerca() = combate.distancia(position, jugador.position()) < 2
   method detectarJugador() {
     if (self.estaVivo() and !enCombate and sala.enCurso() and jugador.estaVivo() and self.jugadorEstaCerca()) {
       combate.incorporar(self)

@@ -123,8 +123,9 @@ class SalaDelApagon inherits Sala {
     self.activarEnemigo()
   }
   method activarEnemigo() {
-    new Enemigo(position = game.at(11, 6), identificador = "guardia1").aparecer()
-    new Enemigo(position = game.at(13, 6), identificador = "guardia2").aparecer()
+    new Enemigo(position = game.at(10, 4), identificador = "guardia1").aparecer()
+    new Enemigo(position = game.at(13, 8), identificador = "guardia2").aparecer()
+    new Enemigo(position = game.at(13, 7), identificador = "guardia3").aparecer()
   }
 }
 
