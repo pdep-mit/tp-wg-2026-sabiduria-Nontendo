@@ -6,6 +6,7 @@ import puzzle.*
 import panel.*
 import empuje.*
 import oscuridad.*
+import combate.*
 
 class Sala {
   var estado = "jugando"
@@ -21,6 +22,7 @@ class Sala {
   method presionarCable(etiqueta) {}
   method alMoverse() {}
   method movimientoBloqueado() = false
+  method hayCajaEn(posicion) = false
 
   method enCurso() = estado == "jugando"
   method permitePasar(posicion) =
@@ -50,7 +52,7 @@ class Sala {
     estado = "jugando"
     mensaje = self.mensajeInicial()
     self.elementosDeEscena().forEach({ elemento => game.addVisual(elemento) })
-    [jugador, cartelEstado, cartelVida, cartelInventario].forEach({ visual => game.addVisual(visual) })
+    [jugador, cartelEstado, cartelVida, cartelInventario, vistaCombate].forEach({ visual => game.addVisual(visual) })
     self.registrarColisiones()
   }
 }
@@ -97,6 +99,7 @@ class SalaDelApagon inherits Sala {
   override method interactuables() = [salida] + panel.interactuable() + (if (restoVisible) [escudo] else [])
   override method elementosDeEscena() = [salida] + panel.elementosIniciales() + niebla.elementos()
   override method movimientoBloqueado() = panel.bloqueaMovimiento()
+  override method hayCajaEn(posicion) = restoVisible and puzzleDeCajas.hayCajaEn(posicion)
   override method presionarCable(etiqueta) { panel.presionar(etiqueta) }
   override method alMoverse() {
     if (restoVisible and !salidaDesbloqueada and puzzleDeCajas.resuelto()) {
@@ -106,7 +109,7 @@ class SalaDelApagon inherits Sala {
     }
   }
   override method puedeAvanzarA(destino, siguiente) =
-    puzzleDeCajas.intentarEmpujar(destino, siguiente, { posicion => self.permitePasar(posicion) })
+    puzzleDeCajas.intentarEmpujar(destino, siguiente, { posicion => self.permitePasar(posicion) and !combate.hayEnemigoEn(posicion) })
 
   method salidaYaAbierta() = salidaDesbloqueada
   method revelarResto() {
@@ -119,7 +122,10 @@ class SalaDelApagon inherits Sala {
     sala.informar("Luz restaurada. Empuja las cajas sobre dos losas y parate vos en la tercera.")
     self.activarEnemigo()
   }
-  method activarEnemigo() {}
+  method activarEnemigo() {
+    new Enemigo(position = game.at(11, 6), identificador = "guardia1").aparecer()
+    new Enemigo(position = game.at(13, 6), identificador = "guardia2").aparecer()
+  }
 }
 
 object mazmorra {
@@ -134,6 +140,7 @@ object mazmorra {
     alLimpiar.apply()
   }
   method avanzar() {
+    combate.reiniciar()
     game.clear()
     jugador.position(game.at(2, 2))
     salaActual = new SalaDelApagon()
@@ -165,11 +172,11 @@ object cartelEstado {
 }
 object cartelVida {
   method position() = game.at(2, 10)
-  method text() = "VIDA: " + jugador.vida() + " / 3"
+  method text() = if (jugador.enCombate()) "" else "VIDA: " + jugador.vida() + " / 3"
   method textColor() = "FF9999"
 }
 object cartelInventario {
   method position() = game.at(9, 10)
-  method text() = "INVENTARIO: " + jugador.inventarioTexto()
+  method text() = if (jugador.enCombate()) "" else "INVENTARIO: " + jugador.inventarioTexto()
   method textColor() = "B8F0CA"
 }
