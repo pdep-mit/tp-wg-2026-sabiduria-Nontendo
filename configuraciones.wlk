@@ -9,9 +9,6 @@ object configuracion {
     keyboard.left().onPressDo({ jugador.moverIzquierda() })
     keyboard.right().onPressDo({ jugador.moverDerecha() })
     keyboard.e().onPressDo({ sala.interactuar() })
-    keyboard.r().onPressDo({
-      sala.reiniciar()
-      self.movimientos()
-    })
+    keyboard.r().onPressDo({ mazmorra.reiniciarTodo() })
   }
 }

@@ -3,6 +3,7 @@ import personajes.*
 import obstaculos.*
 import objetos.*
 import puzzle.*
+import configuraciones.*
 
 class Sala {
   var estado = "jugando"
@@ -13,7 +14,7 @@ class Sala {
   method interactuables()
   method elementosDeEscena()
   method registrarColisiones() {}
-  method reiniciarPropio() {}
+  method prepararEstadoGlobal() {}
 
   method enCurso() = estado == "jugando"
   method permitePasar(posicion) =
@@ -36,44 +37,66 @@ class Sala {
     self.informar("SIN VIDA! R para reiniciar la demo.")
   }
   method iniciar() {
+    self.prepararEstadoGlobal()
+    estado = "jugando"
     mensaje = self.mensajeInicial()
     self.elementosDeEscena().forEach({ elemento => game.addVisual(elemento) })
     [jugador, cartelEstado, cartelVida, cartelInventario].forEach({ visual => game.addVisual(visual) })
     self.registrarColisiones()
   }
-  method reiniciar() {
-    game.clear()
-    jugador.reiniciar()
-    estado = "jugando"
-    self.reiniciarPropio()
-    self.iniciar()
-  }
 }
 
 class SalaDeLosTresSellos inherits Sala {
-  var llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
-  var recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
+  const llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
+  const recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
   const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
   const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
+  const salida = new Salida(position = game.at(14, 7), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
+  var llaveVisible = false
 
   override method mensajeInicial() = "Sala de los tres sellos | Activa 1 > 2 > 3"
+  override method prepararEstadoGlobal() {
+    puzzle.reiniciar()
+    antorcha.encendida(false)
+    barrera.abierta(false)
+  }
   override method obstaculos() = muros + [barrera, antorcha, salida]
-  override method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (puzzle.resuelto()) [llave] else [])
+  override method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (llaveVisible) [llave] else [])
   override method elementosDeEscena() = muros + pinchos + puzzle.botones() + [barrera, antorcha, salida, recuerdo]
   override method registrarColisiones() {
     pinchos.forEach({ pincho => game.onCollideDo(pincho, { elemento => pincho.chocarCon(elemento) }) })
   }
-  override method reiniciarPropio() {
-    puzzle.reiniciar()
-    salida.abierta(false)
-    llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(12, 5))
-    recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
+  method revelarLlave() {
+    llaveVisible = true
+    game.addVisual(llave)
   }
-  method revelarLlave() { game.addVisual(llave) }
+}
+
+class SalaDelApagon inherits Sala {
+  const salida = new Salida(position = game.at(14, 7), condicion = { true }, alCruzar = { sala.ganar() })
+
+  override method mensajeInicial() = "Sala del apagon | (en construccion, llegaste bien)"
+  override method obstaculos() = [salida]
+  override method interactuables() = [salida]
+  override method elementosDeEscena() = [salida]
 }
 
 object mazmorra {
   var property salaActual = new SalaDeLosTresSellos()
+  method reiniciarTodo() {
+    game.clear()
+    jugador.reiniciar()
+    salaActual = new SalaDeLosTresSellos()
+    salaActual.iniciar()
+    configuracion.movimientos()
+  }
+  method avanzar() {
+    game.clear()
+    jugador.position(game.at(2, 2))
+    salaActual = new SalaDelApagon()
+    salaActual.iniciar()
+    configuracion.movimientos()
+  }
 }
 
 object sala {
@@ -86,7 +109,6 @@ object sala {
   method ganar() { self.actual().ganar() }
   method perder() { self.actual().perder() }
   method iniciar() { self.actual().iniciar() }
-  method reiniciar() { self.actual().reiniciar() }
   method revelarLlave() { self.actual().revelarLlave() }
 }
 
