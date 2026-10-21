@@ -41,12 +41,23 @@ class NodoCable {
   const property etiqueta
   const property position
   const property panel
-  method text() = etiqueta
-  method textColor() = if (panel.estaConectado(etiqueta)) "7CFC9A" else "F2F2F2"
+  method image() = "zelda/cable-" + etiqueta + (if (panel.estaConectado(etiqueta)) "-on" else "") + ".png"
 }
 
 class MarcaPanel {
   const property position
-  method text() = "[ panel ]"
-  method textColor() = "6B6B8C"
+  const property alActivar
+  method image() = "zelda/panel-pared.png"
+  method disponible() = true
+  method interactuar(personaje) { alActivar.apply() }
+}
+
+class TableroPanel {
+  const property position
+  method image() = "zelda/tablero-panel.png"
+}
+
+class TelonNegro {
+  const property position
+  method image() = "zelda/negro-total.png"
 }

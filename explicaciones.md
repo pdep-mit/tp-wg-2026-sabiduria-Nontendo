@@ -12,23 +12,36 @@
 
 ## Conceptos en desarrollo (Checkpoint 2)
 
-- **Herencia + Template Method**: se generaliza `ElementoDanino` como clase base de
-  todo lo que puede lastimar al jugador. Define el flujo común (`chocarCon`) y deja
-  como hooks abstractos lo que cada subclase decide (`danioQueCausa`,
-  `efectoAdicional`). `Pincho` (daño fijo, estático) y `Enemigo` (daño propio, se
-  mueve) son subclases concretas. Ver diagrama [ElementoDanino](assets/diagramas/ElementoDanino.png).
-- **Colisiones propias de Wollok Game**: se reemplaza el chequeo manual de posición
-  por `game.onCollideDo`, para que el motor avise cuándo el jugador choca con un
-  `ElementoDanino`.
-- **Eventos temporales**: el `Enemigo` se mueve con `game.tick(...)`, el tercer tipo
-  de bloque de configuración de eventos (junto a teclado y colisión).
-- **Herencia de salas**: `Sala` pasa de ser un objeto único a una clase, con una
-  subclase para la sala de los tres sellos y otra para la sala del enemigo. Un
+- **Herencia + Template Method en `Sala`**: `Sala` pasó de ser un objeto único a una
+  clase abstracta con el flujo general del juego (`iniciar()`, `permitePasar()`,
+  `interactuar()`, `ganar()`, `perder()`). Cada sala concreta solo redefine los
+  hooks: `mensajeInicial()`, `fondo()`, `obstaculos()`, `interactuables()`,
+  `elementosDeEscena()`, y opcionalmente `alMoverse()`, `movimientoBloqueado()`,
+  `puedeAvanzarA()`. Hay dos subclases, `SalaDeLosTresSellos` y `SalaDelApagon`. Un
   objeto `mazmorra` sostiene cuál es la sala actual y resuelve la transición entre
   ambas. Ver diagrama [Sala](assets/diagramas/Sala.png).
-- **Colecciones**: listas de obstáculos, botones e inventario ya se manejan de forma
-  declarativa (`filter`, `map`, `forEach`, `any`), evitando lógica repetida por
-  cada elemento.
+- **Herencia + Template Method en `ElementoDanino`**: clase base de todo lo que
+  puede lastimar al jugador. Define el flujo común (`chocarCon`) y deja como hooks
+  abstractos lo que cada subclase decide (`danioQueCausa`, `efectoAdicional`).
+  `Pincho` (daño fijo, estático) es una subclase concreta ya implementada;
+  `Enemigo` (daño propio, se mueve) todavía no. Ver diagrama
+  [ElementoDanino](assets/diagramas/ElementoDanino.png).
+- **Colisiones propias de Wollok Game**: se reemplaza el chequeo manual de posición
+  por `game.onCollideDo`, para que el motor avise cuándo el jugador choca con un
+  `ElementoDanino`. Ya en uso para `Pincho`.
+- **Eventos temporales**: se usa `game.schedule(...)` para la expiración automática
+  del escudo del jugador. El movimiento del `Enemigo` va a usar `game.tick(...)`,
+  el tercer tipo de bloque de configuración de eventos (junto a teclado y
+  colisión).
+- **Bloques como parámetros**: además de los eventos de teclado y colisión, se usan
+  bloques para inyectar comportamiento sin acoplar clases. `PanelDeCables(pares,
+  alResolver)` resuelve el minijuego de cables sin saber qué pasa después.
+  `Salida(condicion, alCruzar)` sirve tanto para "necesitás la llave" como para
+  "las tres losas están pisadas", porque la condición y la acción al cruzar son
+  bloques que le pasa cada sala.
+- **Colecciones**: listas de obstáculos, botones, inventario, cables y losas se
+  manejan de forma declarativa (`filter`, `map`, `forEach`, `any`, `all`), evitando
+  lógica repetida por cada elemento.
 
 # Diagramas
 

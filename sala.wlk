@@ -5,6 +5,7 @@ import objetos.*
 import puzzle.*
 import panel.*
 import empuje.*
+import oscuridad.*
 
 class Sala {
   var estado = "jugando"
@@ -59,7 +60,7 @@ class SalaDeLosTresSellos inherits Sala {
   const recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
   const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
   const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
-    const salida = new Salida(position = game.at(14, 8), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
+  const salida = new Salida(position = game.at(14, 8), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
   var llaveVisible = false
 
   override method mensajeInicial() = "Sala de los tres sellos | Activa 1 > 2 > 3"
@@ -83,28 +84,31 @@ class SalaDeLosTresSellos inherits Sala {
 
 class SalaDelApagon inherits Sala {
   const posicionPanel = game.at(2, 7)
-  const marcaPanel = new MarcaPanel(position = posicionPanel)
+  const marcaPanel = new MarcaPanel(position = posicionPanel, alActivar = { self.activarPanel() })
   const panel = new PanelDeCables(pares = [["1", "D"], ["2", "A"], ["3", "F"], ["4", "S"]], alResolver = { self.revelarResto() })
   const nodosNumericos = [
-    new NodoCable(etiqueta = "1", position = game.at(2, 6), panel = panel),
-    new NodoCable(etiqueta = "2", position = game.at(4, 6), panel = panel),
-    new NodoCable(etiqueta = "3", position = game.at(6, 6), panel = panel),
-    new NodoCable(etiqueta = "4", position = game.at(8, 6), panel = panel)
+    new NodoCable(etiqueta = "1", position = game.at(6.19, 5.84), panel = panel),
+    new NodoCable(etiqueta = "2", position = game.at(6.99, 5.84), panel = panel),
+    new NodoCable(etiqueta = "3", position = game.at(7.89, 5.84), panel = panel),
+    new NodoCable(etiqueta = "4", position = game.at(8.75, 5.84), panel = panel)
   ]
   const nodosLetra = [
-    new NodoCable(etiqueta = "A", position = game.at(2, 8), panel = panel),
-    new NodoCable(etiqueta = "S", position = game.at(4, 8), panel = panel),
-    new NodoCable(etiqueta = "D", position = game.at(6, 8), panel = panel),
-    new NodoCable(etiqueta = "F", position = game.at(8, 8), panel = panel)
+    new NodoCable(etiqueta = "A", position = game.at(6.19, 3.51), panel = panel),
+    new NodoCable(etiqueta = "S", position = game.at(6.99, 3.51), panel = panel),
+    new NodoCable(etiqueta = "D", position = game.at(7.89, 3.51), panel = panel),
+    new NodoCable(etiqueta = "F", position = game.at(8.75, 3.51), panel = panel)
   ]
   const escudo = new Escudo(nombre = "escudo", sprite = "zelda/escudo.png", position = game.at(12, 3))
   const cajas = [new Caja(position = game.at(5, 3)), new Caja(position = game.at(10, 3))]
   const losas = [
-    new Losa(position = game.at(5, 2), ocupantes = cajas),
-    new Losa(position = game.at(10, 2), ocupantes = cajas),
-    new Losa(position = game.at(7, 4), ocupantes = cajas)
+    new Losa(position = game.at(5, 2), ocupantes = cajas, resuelta = { self.salidaYaAbierta() }),
+    new Losa(position = game.at(10, 2), ocupantes = cajas, resuelta = { self.salidaYaAbierta() }),
+    new Losa(position = game.at(7, 4), ocupantes = cajas, resuelta = { self.salidaYaAbierta() })
   ]
   const salida = new Salida(position = game.at(14, 8), condicion = { self.salidaYaAbierta() }, alCruzar = { sala.ganar() })
+  const sombras = (1..14).flatMap({ x => (1..8).map({ y => new Sombra(position = game.at(x, y)) }) })
+  const telonNegro = new TelonNegro(position = game.at(1, 1))
+  const tableroPanel = new TableroPanel(position = game.at(1.5, 1.5))
   var panelActivo = false
   var restoVisible = false
   var salidaDesbloqueada = false
@@ -112,14 +116,12 @@ class SalaDelApagon inherits Sala {
   override method mensajeInicial() = "Sala del apagon | Esta oscuro. Se ve algo en la pared, acercate."
   override method fondo() = "zelda/sala2.png"
   override method obstaculos() = [salida]
-  override method interactuables() = [salida] + (if (restoVisible) [escudo] else [])
-  override method elementosDeEscena() = [salida, marcaPanel]
+  override method interactuables() = [salida] + (if (!panelActivo) [marcaPanel] else []) + (if (restoVisible) [escudo] else [])
+  override method elementosDeEscena() = [salida, marcaPanel] + sombras
   override method movimientoBloqueado() = panelActivo and !panel.resuelto()
   override method presionarCable(etiqueta) { panel.presionar(etiqueta) }
   override method alMoverse() {
-    if (!panelActivo and jugador.position().distance(posicionPanel) <= 1) {
-      self.activarPanel()
-    } else if (restoVisible and !salidaDesbloqueada and self.losasResueltas()) {
+    if (restoVisible and !salidaDesbloqueada and self.losasResueltas()) {
       salidaDesbloqueada = true
       salida.actualizarEstado()
       sala.informar("Las tres losas estan pisadas! La salida se abrio permanentemente.")
@@ -142,14 +144,21 @@ class SalaDelApagon inherits Sala {
   method activarPanel() {
     panelActivo = true
     game.removeVisual(marcaPanel)
+    game.addVisual(telonNegro)
+    game.addVisual(tableroPanel)
     (nodosNumericos + nodosLetra).forEach({ nodo => game.addVisual(nodo) })
     sala.informar("Panel encontrado! Conecta cada numero con su letra (1234 y ASDF).")
   }
   method revelarResto() {
     restoVisible = true
     (nodosNumericos + nodosLetra).forEach({ nodo => game.removeVisual(nodo) })
+    game.removeVisual(tableroPanel)
+    game.removeVisual(telonNegro)
+    sombras.forEach({ sombra => game.removeVisual(sombra) })
     game.addVisual(escudo)
-    (cajas + losas).forEach({ elemento => game.addVisual(elemento) })
+    (losas + cajas).forEach({ elemento => game.addVisual(elemento) })
+    game.removeVisual(jugador)
+    game.addVisual(jugador)
     sala.informar("Luz restaurada. Empuja las cajas sobre dos losas y parate vos en la tercera.")
     self.activarEnemigo()
   }

@@ -3,14 +3,13 @@ import personajes.*
 
 class Caja {
   var property position
-  method text() = "[CAJA]"
-  method textColor() = "C9A34D"
+  method image() = "zelda/caja.png"
 }
 
 class Losa {
   const property position
   const property ocupantes
-  method presionada() = jugador.position() == position or ocupantes.any({ caja => caja.position() == position })
-  method text() = if (self.presionada()) "[X]" else "[ ]"
-  method textColor() = if (self.presionada()) "7CFC9A" else "8C8CA8"
+  const property resuelta
+  method presionada() = resuelta.apply() or jugador.position() == position or ocupantes.any({ caja => caja.position() == position })
+  method image() = if (self.presionada()) "zelda/losa-on.png" else "zelda/losa.png"
 }
