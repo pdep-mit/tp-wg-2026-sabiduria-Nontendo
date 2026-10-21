@@ -17,10 +17,10 @@ object sala {
   method permitePasar(posicion) =
     posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
     and !self.obstaculos().any({ obstaculo => obstaculo.bloqueaPaso(posicion) })
-  method alPisar(posicion) {
-    pinchos.filter({ pincho => pincho.position() == posicion }).forEach({ pincho => pincho.chocarCon(jugador) })
+  method registrarColisiones() {
+    pinchos.forEach({ pincho => game.onCollideDo(pincho, { elemento => pincho.chocarCon(elemento) }) })
   }
-  // E funciona en la propia celda o a una celda de distancia, sin diagonales.
+
   method interactuar() {
     if (self.enCurso()) {
       const cercanos = self.interactuables().filter({ objeto => objeto.disponible() and objeto.position().distance(jugador.position()) <= 1 })
@@ -44,6 +44,7 @@ object sala {
     pinchos.forEach({ pincho => game.addVisual(pincho) })
     puzzle.botones().forEach({ boton => game.addVisual(boton) })
     [barrera, antorcha, salida, recuerdo, jugador, cartelEstado, cartelVida, cartelInventario].forEach({ visual => game.addVisual(visual) })
+    self.registrarColisiones()
   }
   method reiniciar() {
     game.clear()
