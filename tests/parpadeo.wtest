@@ -1,0 +1,91 @@
+import wollok.game.*
+import personajes.*
+import sala.*
+
+describe "Parpadeo al recibir dano" {
+  test "el jugador se oculta y reaparece dos veces sin salir del tablero" {
+    mazmorra.reiniciarTodo()
+    const inicio = io.currentTime()
+    jugador.recibirDanio(1)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+    io.flushEvents(inicio + 120)
+    assert.equals("zelda/transparente.png", jugador.image())
+    assert.that(game.hasVisual(jugador))
+    io.flushEvents(inicio + 240)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+    io.flushEvents(inicio + 360)
+    assert.equals("zelda/transparente.png", jugador.image())
+    io.flushEvents(inicio + 480)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+  }
+
+  test "el enemigo tambien parpadea dos veces" {
+    mazmorra.reiniciarTodo()
+    const enemigo = new Enemigo(position = game.at(12, 7))
+    enemigo.aparecer()
+    const inicio = io.currentTime()
+    enemigo.recibirDanio(1)
+    io.flushEvents(inicio + 120)
+    assert.equals("zelda/transparente.png", enemigo.image())
+    io.flushEvents(inicio + 240)
+    assert.equals("zelda/enemigo.png", enemigo.image())
+    io.flushEvents(inicio + 360)
+    assert.equals("zelda/transparente.png", enemigo.image())
+    io.flushEvents(inicio + 480)
+    assert.equals("zelda/enemigo.png", enemigo.image())
+  }
+
+  test "el escudo evita el dano y el parpadeo" {
+    mazmorra.reiniciarTodo()
+    jugador.activarEscudo()
+    const inicio = io.currentTime()
+    jugador.recibirDanio(1)
+    io.flushEvents(inicio + 120)
+    assert.equals(3, jugador.vida())
+    assert.equals("zelda/link-abajo.png", jugador.image())
+  }
+
+  test "reiniciar restaura el sprite aunque hubiera un parpadeo pendiente" {
+    mazmorra.reiniciarTodo()
+    jugador.recibirDanio(1)
+    const inicio = io.currentTime()
+    io.flushEvents(inicio + 120)
+    assert.equals("zelda/transparente.png", jugador.image())
+    jugador.reiniciar()
+    assert.equals("zelda/link-abajo.png", jugador.image())
+    io.flushEvents(inicio + 240)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+  }
+
+  test "otro golpe reinicia el parpadeo y descarta los cambios del golpe anterior" {
+    mazmorra.reiniciarTodo()
+    const inicio = io.currentTime()
+    jugador.recibirDanio(1)
+    io.flushEvents(inicio + 60)
+    jugador.recibirDanio(1)
+    io.flushEvents(inicio + 120)
+    io.flushEvents(inicio + 180)
+    assert.equals("zelda/transparente.png", jugador.image())
+    io.flushEvents(inicio + 240)
+    assert.equals("zelda/transparente.png", jugador.image())
+    io.flushEvents(inicio + 300)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+    io.flushEvents(inicio + 360)
+    io.flushEvents(inicio + 420)
+    assert.equals("zelda/transparente.png", jugador.image())
+    io.flushEvents(inicio + 540)
+    assert.equals("zelda/link-abajo.png", jugador.image())
+  }
+
+  test "un enemigo derrotado no reaparece por un parpadeo pendiente" {
+    mazmorra.reiniciarTodo()
+    const enemigo = new Enemigo(position = game.at(12, 7))
+    enemigo.aparecer()
+    const inicio = io.currentTime()
+    enemigo.recibirDanio(1)
+    io.flushEvents(inicio + 120)
+    enemigo.recibirDanio(2)
+    io.flushEvents(inicio + 480)
+    assert.notThat(game.hasVisual(enemigo))
+  }
+}
