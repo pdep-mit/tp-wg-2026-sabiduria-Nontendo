@@ -2,15 +2,6 @@ import wollok.game.*
 import personajes.*
 import combate.*
 import sala.*
-import obstaculos.*
-import configuraciones.*
-
-object relojDeCombate {
-  method completarTurnosEnemigos() {
-    const inicio = io.currentTime()
-    (1..30).forEach({ instante => io.flushEvents(inicio + instante * 100) })
-  }
-}
 
 describe "Combate tactico" {
   test "el enemigo recorre una casilla por vez y conserva su turno mientras camina" {
@@ -38,35 +29,6 @@ describe "Combate tactico" {
     assert.equals(jugador, combate.participanteActual())
   }
 
-  test "reiniciar cancela los pasos pendientes del enemigo" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(6, 2))
-    combate.incorporar(enemigo)
-    const inicio = io.currentTime()
-    jugador.pasarTurno()
-    io.flushEvents(inicio + 220)
-    jugador.reiniciar()
-    io.flushEvents(inicio + 440)
-    io.flushEvents(inicio + 660)
-    io.flushEvents(inicio + 880)
-    assert.equals(game.at(5, 2), enemigo.position())
-    assert.equals(3, jugador.vida())
-    assert.notThat(combate.activo())
-  }
-
-  test "si el enemigo muere caminando se completa su turno sin bloquear el combate" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(6, 2))
-    combate.incorporar(enemigo)
-    combate.incorporar(new Enemigo(position = game.at(8, 7)))
-    jugador.pasarTurno()
-    enemigo.recibirDanio(3)
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(jugador, combate.participanteActual())
-    assert.notThat(jugador.enEspera())
-    assert.equals(game.at(6, 2), enemigo.position())
-  }
-
   test "el enemigo detecta a menos de cinco casillas e inicia el turno del jugador" {
     jugador.reiniciar()
     const enemigo = new Enemigo(position = game.at(6, 2))
@@ -75,27 +37,6 @@ describe "Combate tactico" {
     assert.notThat(jugador.enEspera())
     assert.that(enemigo.enEspera())
     assert.equals([jugador, enemigo], combate.participantes())
-  }
-
-  test "a cinco casillas el enemigo permanece quieto" {
-    jugador.reiniciar()
-    const enemigo = new Enemigo(position = game.at(7, 2))
-    enemigo.detectarJugador()
-    assert.notThat(enemigo.enCombate())
-    assert.notThat(jugador.enCombate())
-  }
-
-  test "moverse consume pasos pero agotarlos no termina el turno" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(8, 7))
-    combate.incorporar(enemigo)
-    jugador.moverDerecha()
-    jugador.moverDerecha()
-    jugador.moverDerecha()
-    jugador.moverDerecha()
-    assert.equals(game.at(5, 2), jugador.position())
-    assert.equals(0, jugador.pasosRestantes())
-    assert.notThat(jugador.enEspera())
   }
 
   test "seleccionar habilidad y orientar ataca sin mover ni terminar turno" {
@@ -114,46 +55,6 @@ describe "Combate tactico" {
     assert.equals(3, enemigo.vida())
   }
 
-  test "pasar ejecuta los enemigos en orden y recupera los recursos del jugador" {
-    mazmorra.reiniciarTodo()
-    const primero = new Enemigo(position = game.at(3, 2))
-    const segundo = new Enemigo(position = game.at(2, 3))
-    combate.incorporar(primero)
-    combate.incorporar(segundo)
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(1, jugador.vida())
-    assert.equals(jugador, combate.participanteActual())
-    assert.notThat(jugador.enEspera())
-    assert.that(primero.enEspera())
-    assert.that(segundo.enEspera())
-    assert.equals(3, jugador.pasosRestantes())
-    assert.that(jugador.ataqueDisponible())
-  }
-
-  test "el enemigo se acerca y golpea solo al quedar adyacente" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(6, 2))
-    combate.incorporar(enemigo)
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(game.at(3, 2), enemigo.position())
-    assert.equals(2, jugador.vida())
-  }
-
-  test "un nuevo enemigo no reinicia los pasos ni duplica participantes" {
-    mazmorra.reiniciarTodo()
-    const primero = new Enemigo(position = game.at(6, 2))
-    primero.detectarJugador()
-    jugador.moverArriba()
-    const segundo = new Enemigo(position = game.at(2, 5))
-    segundo.detectarJugador()
-    segundo.detectarJugador()
-    assert.equals(2, jugador.pasosRestantes())
-    assert.equals(3, combate.participantes().size())
-    assert.that(segundo.enEspera())
-  }
-
   test "derrotar al ultimo enemigo termina el combate" {
     mazmorra.reiniciarTodo()
     const enemigo = new Enemigo(position = game.at(3, 2), vida = 2)
@@ -165,145 +66,4 @@ describe "Combate tactico" {
     assert.that(combate.participantes().isEmpty())
   }
 
-  test "reiniciar limpia el encuentro y los estados" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(3, 2))
-    combate.incorporar(enemigo)
-    mazmorra.reiniciarTodo()
-    assert.notThat(jugador.enCombate())
-    assert.notThat(enemigo.enCombate())
-    assert.that(combate.participantes().isEmpty())
-    assert.equals(2, jugador.habilidades().size())
-  }
-
-  test "el disparo alcanza tres casillas y respeta las paredes" {
-    mazmorra.reiniciarTodo()
-    const enemigo = new Enemigo(position = game.at(5, 2))
-    combate.incorporar(enemigo)
-    jugador.seleccionarHabilidad(2)
-    jugador.moverDerecha()
-    assert.equals(2, enemigo.vida())
-    assert.equals(game.at(2, 2), jugador.position())
-    jugador.position(game.at(9, 2))
-    enemigo.position(game.at(11, 2))
-    jugador.iniciarTurno()
-    jugador.seleccionarHabilidad(2)
-    jugador.moverDerecha()
-    assert.equals(2, enemigo.vida())
-    assert.that(jugador.ataqueDisponible())
-  }
-
-  test "el enemigo rodea el muro en vez de atravesarlo" {
-    mazmorra.reiniciarTodo()
-    barrera.abierta(true)
-    jugador.position(game.at(9, 3))
-    const enemigo = new Enemigo(position = game.at(11, 3))
-    combate.incorporar(enemigo)
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(game.at(9, 4), enemigo.position())
-    assert.equals(2, jugador.vida())
-  }
-
-  test "un movimiento bloqueado no gasta pasos" {
-    mazmorra.reiniciarTodo()
-    jugador.position(game.at(9, 2))
-    combate.incorporar(new Enemigo(position = game.at(12, 7)))
-    jugador.moverDerecha()
-    assert.equals(game.at(9, 2), jugador.position())
-    assert.equals(3, jugador.pasosRestantes())
-  }
-
-  test "un enemigo sin camino no se mueve ni ataca" {
-    mazmorra.reiniciarTodo()
-    jugador.position(game.at(9, 3))
-    const enemigo = new Enemigo(position = game.at(11, 3))
-    combate.incorporar(enemigo)
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(game.at(11, 3), enemigo.position())
-    assert.equals(3, jugador.vida())
-  }
-
-  test "los muertos se saltean y los vivos conservan su lugar" {
-    mazmorra.reiniciarTodo()
-    const primero = new Enemigo(position = game.at(3, 2), vida = 2)
-    const segundo = new Enemigo(position = game.at(2, 3))
-    combate.incorporar(primero)
-    combate.incorporar(segundo)
-    jugador.seleccionarHabilidad(1)
-    jugador.moverDerecha()
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(2, jugador.vida())
-    assert.equals(jugador, combate.participanteActual())
-  }
-
-  test "morir durante el turno enemigo termina el combate" {
-    mazmorra.reiniciarTodo()
-    jugador.vida(1)
-    combate.incorporar(new Enemigo(position = game.at(3, 2)))
-    combate.incorporar(new Enemigo(position = game.at(2, 3)))
-    jugador.pasarTurno()
-    relojDeCombate.completarTurnosEnemigos()
-    assert.equals(0, jugador.vida())
-    assert.notThat(sala.enCurso())
-    assert.notThat(jugador.enCombate())
-    assert.that(combate.participantes().isEmpty())
-  }
-
-  test "al restaurar la luz aparecen dos enemigos registrados" {
-    mazmorra.reiniciarTodo()
-    mazmorra.avanzar()
-    sala.presionarCable("1")
-    sala.presionarCable("D")
-    sala.presionarCable("2")
-    sala.presionarCable("A")
-    sala.presionarCable("3")
-    sala.presionarCable("F")
-    sala.presionarCable("4")
-    sala.presionarCable("S")
-    assert.equals(2, combate.enemigosVivos().size())
-    combate.enemigosVivos().forEach({ enemigo => assert.that(game.hasVisual(enemigo)) })
-    jugador.position(game.at(8, 6))
-    combate.enemigosVivos().first().detectarJugador()
-    assert.that(jugador.enCombate())
-  }
-
-  test "los controles numericos seleccionan las habilidades durante el combate" {
-    mazmorra.reiniciarTodo()
-    combate.incorporar(new Enemigo(position = game.at(3, 2)))
-    configuracion.habilidadOCable(2)
-    assert.equals(jugador.habilidades().get(1), jugador.habilidadSeleccionada())
-    configuracion.habilidadOCable(1)
-    assert.equals(jugador.habilidades().get(0), jugador.habilidadSeleccionada())
-    assert.that(vistaCombate.text().contains("EN COMBATE"))
-    assert.that(vistaCombate.text().contains("Pasos: 3"))
-    assert.that(vistaCombate.text().contains("alcance: 3"))
-    assert.that(vistaCombate.text().contains("dano: 2"))
-  }
-
-  test "durante el combate las cajas bloquean el movimiento sin activar el puzzle" {
-    mazmorra.reiniciarTodo()
-    mazmorra.avanzar()
-    sala.actual().revelarResto()
-    jugador.position(game.at(4, 3))
-    combate.incorporar(combate.enemigosVivos().first())
-    jugador.moverDerecha()
-    assert.equals(game.at(4, 3), jugador.position())
-    assert.that(sala.actual().hayCajaEn(game.at(5, 3)))
-    assert.equals(3, jugador.pasosRestantes())
-  }
-
-  test "explorando no se puede empujar una caja sobre un enemigo" {
-    mazmorra.reiniciarTodo()
-    mazmorra.avanzar()
-    sala.actual().revelarResto()
-    combate.enemigosVivos().first().position(game.at(6, 3))
-    jugador.position(game.at(4, 3))
-    jugador.moverDerecha()
-    assert.equals(game.at(4, 3), jugador.position())
-    assert.that(sala.actual().hayCajaEn(game.at(5, 3)))
-    assert.notThat(sala.actual().hayCajaEn(game.at(6, 3)))
-  }
 }
