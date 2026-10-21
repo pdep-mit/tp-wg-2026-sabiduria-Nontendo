@@ -1,5 +1,15 @@
 import wollok.game.*
 import sala.*
+class Llave {
+  const property position
+  method nombre() = "Llave"
+  method image() = "zelda/llave.png"
+
+  method chocarCon(personaje) {
+    personaje.guardar(self)
+    game.removeVisual(self)
+  }
+}
 import obstaculos.*
 
 class Boton {
