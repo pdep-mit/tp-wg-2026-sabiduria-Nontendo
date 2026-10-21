@@ -3,23 +3,30 @@ import personajes.*
 import obstaculos.*
 import objetos.*
 import puzzle.*
-import configuraciones.*
+import panel.*
+import empuje.*
 
 class Sala {
   var estado = "jugando"
   var property mensaje = ""
 
   method mensajeInicial()
+  method fondo()
   method obstaculos()
   method interactuables()
   method elementosDeEscena()
   method registrarColisiones() {}
   method prepararEstadoGlobal() {}
+  method presionarCable(etiqueta) {}
+  method alMoverse() {}
+  method movimientoBloqueado() = false
 
   method enCurso() = estado == "jugando"
   method permitePasar(posicion) =
-    posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
+    !self.movimientoBloqueado()
+    and posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
     and !self.obstaculos().any({ obstaculo => obstaculo.bloqueaPaso(posicion) })
+  method puedeAvanzarA(destino, siguiente) = self.permitePasar(destino)
   method interactuar() {
     if (self.enCurso()) {
       const cercanos = self.interactuables().filter({ objeto => objeto.disponible() and objeto.position().distance(jugador.position()) <= 1 })
@@ -37,6 +44,7 @@ class Sala {
     self.informar("SIN VIDA! R para reiniciar la demo.")
   }
   method iniciar() {
+    game.boardGround(self.fondo())
     self.prepararEstadoGlobal()
     estado = "jugando"
     mensaje = self.mensajeInicial()
@@ -51,10 +59,11 @@ class SalaDeLosTresSellos inherits Sala {
   const recuerdo = new ObjetoRecogible(nombre = "colgante", sprite = "zelda/colgante.png", position = game.at(4, 2))
   const muros = (1..8).filter({ y => y != 4 }).map({ y => new Muro(position = game.at(10, y)) })
   const pinchos = [new Pincho(position = game.at(6, 2)), new Pincho(position = game.at(7, 2))]
-  const salida = new Salida(position = game.at(14, 7), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
+    const salida = new Salida(position = game.at(14, 8), condicion = { jugador.tiene("llave") }, alCruzar = { mazmorra.avanzar() })
   var llaveVisible = false
 
   override method mensajeInicial() = "Sala de los tres sellos | Activa 1 > 2 > 3"
+  override method fondo() = "zelda/sala.png"
   override method prepararEstadoGlobal() {
     puzzle.reiniciar()
     antorcha.encendida(false)
@@ -73,29 +82,97 @@ class SalaDeLosTresSellos inherits Sala {
 }
 
 class SalaDelApagon inherits Sala {
-  const salida = new Salida(position = game.at(14, 7), condicion = { true }, alCruzar = { sala.ganar() })
+  const posicionPanel = game.at(2, 7)
+  const marcaPanel = new MarcaPanel(position = posicionPanel)
+  const panel = new PanelDeCables(pares = [["1", "D"], ["2", "A"], ["3", "F"], ["4", "S"]], alResolver = { self.revelarResto() })
+  const nodosNumericos = [
+    new NodoCable(etiqueta = "1", position = game.at(2, 6), panel = panel),
+    new NodoCable(etiqueta = "2", position = game.at(4, 6), panel = panel),
+    new NodoCable(etiqueta = "3", position = game.at(6, 6), panel = panel),
+    new NodoCable(etiqueta = "4", position = game.at(8, 6), panel = panel)
+  ]
+  const nodosLetra = [
+    new NodoCable(etiqueta = "A", position = game.at(2, 8), panel = panel),
+    new NodoCable(etiqueta = "S", position = game.at(4, 8), panel = panel),
+    new NodoCable(etiqueta = "D", position = game.at(6, 8), panel = panel),
+    new NodoCable(etiqueta = "F", position = game.at(8, 8), panel = panel)
+  ]
+  const escudo = new Escudo(nombre = "escudo", sprite = "zelda/escudo.png", position = game.at(12, 3))
+  const cajas = [new Caja(position = game.at(5, 3)), new Caja(position = game.at(10, 3))]
+  const losas = [
+    new Losa(position = game.at(5, 2), ocupantes = cajas),
+    new Losa(position = game.at(10, 2), ocupantes = cajas),
+    new Losa(position = game.at(7, 4), ocupantes = cajas)
+  ]
+  const salida = new Salida(position = game.at(14, 8), condicion = { self.salidaYaAbierta() }, alCruzar = { sala.ganar() })
+  var panelActivo = false
+  var restoVisible = false
+  var salidaDesbloqueada = false
 
-  override method mensajeInicial() = "Sala del apagon | (en construccion, llegaste bien)"
+  override method mensajeInicial() = "Sala del apagon | Esta oscuro. Se ve algo en la pared, acercate."
+  override method fondo() = "zelda/sala2.png"
   override method obstaculos() = [salida]
-  override method interactuables() = [salida]
-  override method elementosDeEscena() = [salida]
+  override method interactuables() = [salida] + (if (restoVisible) [escudo] else [])
+  override method elementosDeEscena() = [salida, marcaPanel]
+  override method movimientoBloqueado() = panelActivo and !panel.resuelto()
+  override method presionarCable(etiqueta) { panel.presionar(etiqueta) }
+  override method alMoverse() {
+    if (!panelActivo and jugador.position().distance(posicionPanel) <= 1) {
+      self.activarPanel()
+    } else if (restoVisible and !salidaDesbloqueada and self.losasResueltas()) {
+      salidaDesbloqueada = true
+      salida.actualizarEstado()
+      sala.informar("Las tres losas estan pisadas! La salida se abrio permanentemente.")
+    }
+  }
+  override method puedeAvanzarA(destino, siguiente) {
+    const cajaEnDestino = cajas.filter({ caja => caja.position() == destino })
+    if (cajaEnDestino.isEmpty()) {
+      return self.permitePasar(destino)
+    }
+    if (self.permitePasar(siguiente) and self.posicionValidaParaCaja(siguiente) and cajas.filter({ caja => caja.position() == siguiente }).isEmpty()) {
+      cajaEnDestino.first().position(siguiente)
+      return true
+    }
+    return false
+  }
+  method posicionValidaParaCaja(posicion) = posicion.x() >= 2 and posicion.x() <= 13 and posicion.y() >= 2 and posicion.y() <= 7
+  method losasResueltas() = losas.all({ losa => losa.presionada() })
+  method salidaYaAbierta() = salidaDesbloqueada
+  method activarPanel() {
+    panelActivo = true
+    game.removeVisual(marcaPanel)
+    (nodosNumericos + nodosLetra).forEach({ nodo => game.addVisual(nodo) })
+    sala.informar("Panel encontrado! Conecta cada numero con su letra (1234 y ASDF).")
+  }
+  method revelarResto() {
+    restoVisible = true
+    (nodosNumericos + nodosLetra).forEach({ nodo => game.removeVisual(nodo) })
+    game.addVisual(escudo)
+    (cajas + losas).forEach({ elemento => game.addVisual(elemento) })
+    sala.informar("Luz restaurada. Empuja las cajas sobre dos losas y parate vos en la tercera.")
+    self.activarEnemigo()
+  }
+  method activarEnemigo() {}
 }
 
 object mazmorra {
   var property salaActual = new SalaDeLosTresSellos()
+  var alLimpiar = {}
+  method configurarAlLimpiar(bloque) { alLimpiar = bloque }
   method reiniciarTodo() {
     game.clear()
     jugador.reiniciar()
     salaActual = new SalaDeLosTresSellos()
     salaActual.iniciar()
-    configuracion.movimientos()
+    alLimpiar.apply()
   }
   method avanzar() {
     game.clear()
     jugador.position(game.at(2, 2))
     salaActual = new SalaDelApagon()
     salaActual.iniciar()
-    configuracion.movimientos()
+    alLimpiar.apply()
   }
 }
 
@@ -105,7 +182,10 @@ object sala {
   method mensaje() = self.actual().mensaje()
   method informar(texto) { self.actual().informar(texto) }
   method permitePasar(posicion) = self.actual().permitePasar(posicion)
+  method puedeAvanzarA(destino, siguiente) = self.actual().puedeAvanzarA(destino, siguiente)
   method interactuar() { self.actual().interactuar() }
+  method presionarCable(etiqueta) { self.actual().presionarCable(etiqueta) }
+  method alMoverse() { self.actual().alMoverse() }
   method ganar() { self.actual().ganar() }
   method perder() { self.actual().perder() }
   method iniciar() { self.actual().iniciar() }

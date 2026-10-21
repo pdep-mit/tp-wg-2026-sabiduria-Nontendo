@@ -7,7 +7,7 @@ program NombreDeJuego {
   game.height(12)
   game.width(16)
   game.cellSize(48)
-  game.boardGround("zelda/sala.png")
+  mazmorra.configurarAlLimpiar({ configuracion.movimientos() })
   sala.iniciar()
   configuracion.movimientos()
   game.start()
