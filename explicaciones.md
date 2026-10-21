@@ -32,7 +32,7 @@
   ambos casos la clase original queda reducida a lo que le es propio (orquestar la
   sala; moverse y tener vida), mientras cada colaborador resuelve un único
   problema. Ver diagramas [SalaDelApagon](assets/diagramas/SalaDelApagon.png) y
-  [jugador](assets/diagramas/Jugador.png).
+  [jugador](assets/diagramas/jugador.png).
 - **Herencia + Template Method en `ElementoDanino`**: clase base de todo lo que
   puede lastimar al jugador. Define el flujo común (`chocarCon`) y deja como hooks
   abstractos lo que cada subclase decide (`danioQueCausa`, `efectoAdicional`).
@@ -64,4 +64,4 @@
 
 ![Colaboradores de SalaDelApagon](assets/diagramas/SalaDelApagon.png)
 
-![Colaboradores de jugador](assets/diagramas/Jugador.png)
+![Colaboradores de jugador](assets/diagramas/jugador.png)
