@@ -1,11 +1,130 @@
 // Archivo de tests de referencia, borrar luego de desarrollar propios
 import wollok.game.*
 import personajes.*
+import objetos.*
+import puzzle.*
+import obstaculos.*
+import empuje.*
+import panel.*
+import sala.*
 
 describe "groupo de tests" {
 
-  test "El jugador comienza en la entrada de la sala" {
-    assert.equals(game.at(2, 2), jugador.position())
+  // Tests de vida
+  test "El jugador comienza con 3 de vida y pierde vida al recibir daño" {
+    jugador.reiniciar()
+    assert.equals(3, jugador.vida())
+    jugador.recibirDanio(1)
+    assert.equals(2, jugador.vida())
+  }
+
+  test "Los pinchos sacan vida al jugador al colisionar" {
+    jugador.reiniciar()
+    const pincho = new Pincho(position = game.at(2, 2))
+    pincho.chocarCon(jugador)
+    assert.equals(2, jugador.vida())
+  }
+
+  // Tests de recoger objetos
+  test "Recoger la llave si el jugador está cerca" {
+    mazmorra.reiniciarTodo()
+    
+    sala.revelarLlave()
+    jugador.position(game.at(11, 5)) // La llave está en (12, 5)
+
+    assert.notThat(jugador.tiene("llave"))
+    sala.interactuar()
+    assert.that(jugador.tiene("llave"))
+  }
+
+  test "interactuar con un Escudo lo guarda en el inventario y activa la protección" {
+    jugador.reiniciar()
+    const escudo = new Escudo(nombre = "escudo", sprite = "zelda/escudo.png", position = game.at(2, 2))
+  
+    assert.notThat(jugador.tiene("escudo"))
+    escudo.interactuar(jugador)
+    assert.that(jugador.tiene("escudo"))
+
+    jugador.recibirDanio(1)
+    assert.equals(3, jugador.vida())
+  }
+
+  // Tests de activar puzzles y su funcionamiento
+  test "Activar el primer botón del puzzle si el jugador está al lado" {
+    mazmorra.reiniciarTodo()
+    // El botón 1 está en la posición (3, 5)
+    jugador.position(game.at(3, 4)) // Distancia = 1
+
+    assert.equals(0, puzzle.progreso())
+    sala.interactuar()
+    assert.equals(1, puzzle.progreso())
+  }
+
+  test "El puzzle de botones progresa al presionarlos en el orden correcto" {
+    puzzle.reiniciar()
+    assert.equals(0, puzzle.progreso())
+    puzzle.presionar(puzzle.botones().get(0))
+    assert.equals(1, puzzle.progreso())
+    puzzle.presionar(puzzle.botones().get(1))
+    assert.equals(2, puzzle.progreso())
+    puzzle.presionar(puzzle.botones().get(2))
+    assert.that(puzzle.resuelto())
+  }
+
+  test "El puzzle se reinicia si se presiona un botón en orden incorrecto" {
+    puzzle.reiniciar()
+    puzzle.presionar(puzzle.botones().get(1))
+    assert.equals(0, puzzle.progreso())
+  }
+
+  test "El panel de cables conecta un par válido y se resuelve" {
+    const panel = new PanelDeCables(
+      position = game.at(2, 7), 
+      pares = [["1", "D"]], 
+      alResolver = {}
+    )
+    assert.notThat(panel.resuelto())
+    panel.presionar("1")
+    panel.presionar("D")
+    assert.that(panel.resuelto())
+  }
+
+  test "La barrera permite o no pasar al jugador por su posición" {
+    mazmorra.reiniciarTodo()
+    const posicionBarrera = game.at(10, 4)
+
+    // Barrera cerrada, el personaje no debería poder pasar
+    barrera.abierta(false)
+    assert.that(barrera.bloqueaPaso(posicionBarrera))
+    assert.notThat(sala.permitePasar(posicionBarrera))
+
+    // Barrera abierta, el personaje debería poder pasar
+    barrera.abierta(true)
+    assert.notThat(barrera.bloqueaPaso(posicionBarrera))
+    assert.that(sala.permitePasar(posicionBarrera))
+  }
+
+  test "la Salida no permite avanzar si el jugador no cumple la condición, pero sí si la cumple" {
+    jugador.reiniciar()
+    var avanzada = false
+    const salidaPrueba = new Salida(
+      position = game.at(14, 8),
+      condicion = { jugador.tiene("llave") },
+      alCruzar = { avanzada = true }
+    )
+
+    // Intentar interactuar sin la llave
+    salidaPrueba.interactuar(jugador)
+    assert.notThat(avanzada)
+
+    // Interactua con la llave en el inventario
+    const llave = new ObjetoRecogible(nombre = "llave", sprite = "zelda/llave.png", position = game.at(1, 1))
+    jugador.guardar(llave)
+  
+    salidaPrueba.interactuar(jugador)
+    assert.that(avanzada)
   }
 
 }
+
+
