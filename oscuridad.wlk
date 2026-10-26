@@ -1,21 +1,25 @@
 import wollok.game.*
 import personajes.*
 
-class Sombra {
-  const property position
-  method image() {
-    const distancia = jugador.position().distance(position)
-    if (distancia <= 1) return "zelda/vision-clara.png"
-    if (distancia <= 2) return "zelda/vision-penumbra.png"
-    return "zelda/vision-oscura.png"
-  }
+class VeloOscuro {
+  const ancho = 31
+  const alto = 23
+
+  method position() = game.at(jugador.position().x() - (ancho - 1) / 2, jugador.position().y() - (alto - 1) / 2)
+  method image() = "zelda/oscuridad.png"
+}
+
+class MarcoFijo {
+  method position() = game.at(0, 0)
+  method image() = "zelda/marco-sala2.png"
 }
 
 class Niebla {
-  const sombras = (1..14).flatMap({ x => (1..8).map({ y => new Sombra(position = game.at(x, y)) }) })
+  const velo = new VeloOscuro()
+  const marco = new MarcoFijo()
 
-  method elementos() = sombras
+  method elementos() = [velo, marco]
   method ocultar() {
-    sombras.forEach({ sombra => game.removeVisual(sombra) })
+    self.elementos().forEach({ elemento => game.removeVisual(elemento) })
   }
 }

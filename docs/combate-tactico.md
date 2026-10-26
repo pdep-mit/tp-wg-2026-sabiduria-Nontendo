@@ -1,7 +1,7 @@
 # Combate tactico
 
 El enemigo consulta la posicion del jugador cada 250 ms. Si la distancia por
-casillas (Manhattan) es menor que 5, solicita incorporarse al combate.
+casillas (Manhattan) es menor que 2, solicita incorporarse al combate.
 La sala aporta el mapa y presenta los enemigos; la deteccion pertenece al enemigo.
 
 ## Objetos y relaciones
@@ -99,7 +99,7 @@ se invalidan al salir del combate o reiniciar la partida.
 | Enemigo | `acercarseAlJugador()` | Programa hasta 3 pasos separados por 220 ms y la finalizacion del turno. |
 | Enemigo | `darPaso(destino, version)` | Avanza una casilla si el turno sigue vigente, esta vivo y el destino sigue libre; descuenta un paso. |
 | Enemigo | `completarTurno(version)` | Intenta atacar y solicita avanzar el turno. Si murio durante el recorrido, tambien permite continuar la pelea. |
-| Enemigo | `atacarSiEstaAlLado()` | Aplica una mordida de 1 de dano si queda a distancia 1, sin diagonales. |
+| Enemigo | `atacarSiEstaAlLado()` | Aplica una mordida de 0.5 de dano si queda a distancia 1, sin diagonales. |
 | combate | `incorporar(enemigo)` | Inicia la lista con el jugador si hace falta y agrega al enemigo sin duplicarlo. |
 | combate | `avanzarTurno()` | Pone al actual en espera, avanza circularmente, saltea muertos e inicia el siguiente. |
 | combate | `caminoAlJugador(origen)` | Busca por anchura un camino sin atravesar paredes, cajas, otros enemigos ni al jugador. Si no existe, devuelve solo el origen. |
@@ -116,7 +116,7 @@ se invalidan al salir del combate o reiniciar la partida.
 |---|---|---|---|
 | jugador | Golpe | 1 | 2 |
 | jugador | Disparo | 3 | 1 |
-| Enemigo | Mordida | 1 | 1 |
+| Enemigo | Mordida | 1 | 0.5 |
 
 - Flechas: movimiento; con una habilidad seleccionada, eligen la direccion del ataque sin mover al jugador.
 - 1 / 2: seleccionar habilidad. Puede cambiarse la seleccion antes de atacar.
@@ -124,7 +124,7 @@ se invalidan al salir del combate o reiniciar la partida.
 - R: reiniciar la partida.
 - Los controles del puzzle y la interaccion con E quedan suspendidos durante el combate.
 
-Los dos enemigos aparecen al restaurar la luz en la segunda sala. Fuera del
+Los tres enemigos aparecen al restaurar la luz en la segunda sala. Fuera del
 radio de deteccion permanecen quietos. Una vez incorporados, alejarse no cancela
 el combate. Al ganar, desaparecen los derrotados y se recupera la exploracion.
 

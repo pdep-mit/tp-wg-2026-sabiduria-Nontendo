@@ -33,7 +33,7 @@ describe "Combate tactico" {
     assert.equals(game.at(3, 2), enemigo.position())
     assert.equals(3, jugador.vida())
     io.flushEvents(inicio + 880)
-    assert.equals(2, jugador.vida())
+    assert.equals(2.5, jugador.vida())
     assert.notThat(jugador.enEspera())
     assert.equals(jugador, combate.participanteActual())
   }
@@ -67,9 +67,9 @@ describe "Combate tactico" {
     assert.equals(game.at(6, 2), enemigo.position())
   }
 
-  test "el enemigo detecta a menos de cinco casillas e inicia el turno del jugador" {
+  test "el enemigo detecta a menos de dos casillas e inicia el turno del jugador" {
     jugador.reiniciar()
-    const enemigo = new Enemigo(position = game.at(6, 2))
+    const enemigo = new Enemigo(position = game.at(3, 2))
     enemigo.detectarJugador()
     assert.that(jugador.enCombate())
     assert.notThat(jugador.enEspera())
@@ -77,9 +77,9 @@ describe "Combate tactico" {
     assert.equals([jugador, enemigo], combate.participantes())
   }
 
-  test "a cinco casillas el enemigo permanece quieto" {
+  test "a dos casillas el enemigo permanece quieto" {
     jugador.reiniciar()
-    const enemigo = new Enemigo(position = game.at(7, 2))
+    const enemigo = new Enemigo(position = game.at(4, 2))
     enemigo.detectarJugador()
     assert.notThat(enemigo.enCombate())
     assert.notThat(jugador.enCombate())
@@ -122,7 +122,7 @@ describe "Combate tactico" {
     combate.incorporar(segundo)
     jugador.pasarTurno()
     relojDeCombate.completarTurnosEnemigos()
-    assert.equals(1, jugador.vida())
+    assert.equals(2, jugador.vida())
     assert.equals(jugador, combate.participanteActual())
     assert.notThat(jugador.enEspera())
     assert.that(primero.enEspera())
@@ -138,15 +138,15 @@ describe "Combate tactico" {
     jugador.pasarTurno()
     relojDeCombate.completarTurnosEnemigos()
     assert.equals(game.at(3, 2), enemigo.position())
-    assert.equals(2, jugador.vida())
+    assert.equals(2.5, jugador.vida())
   }
 
   test "un nuevo enemigo no reinicia los pasos ni duplica participantes" {
     mazmorra.reiniciarTodo()
-    const primero = new Enemigo(position = game.at(6, 2))
+    const primero = new Enemigo(position = game.at(3, 2))
     primero.detectarJugador()
     jugador.moverArriba()
-    const segundo = new Enemigo(position = game.at(2, 5))
+    const segundo = new Enemigo(position = game.at(2, 4))
     segundo.detectarJugador()
     segundo.detectarJugador()
     assert.equals(2, jugador.pasosRestantes())
@@ -202,7 +202,7 @@ describe "Combate tactico" {
     jugador.pasarTurno()
     relojDeCombate.completarTurnosEnemigos()
     assert.equals(game.at(9, 4), enemigo.position())
-    assert.equals(2, jugador.vida())
+    assert.equals(2.5, jugador.vida())
   }
 
   test "un movimiento bloqueado no gasta pasos" {
@@ -235,7 +235,7 @@ describe "Combate tactico" {
     jugador.moverDerecha()
     jugador.pasarTurno()
     relojDeCombate.completarTurnosEnemigos()
-    assert.equals(2, jugador.vida())
+    assert.equals(2.5, jugador.vida())
     assert.equals(jugador, combate.participanteActual())
   }
 
@@ -252,7 +252,7 @@ describe "Combate tactico" {
     assert.that(combate.participantes().isEmpty())
   }
 
-  test "al restaurar la luz aparecen dos enemigos registrados" {
+  test "al restaurar la luz aparecen tres enemigos registrados" {
     mazmorra.reiniciarTodo()
     mazmorra.avanzar()
     sala.presionarCable("1")
@@ -263,9 +263,9 @@ describe "Combate tactico" {
     sala.presionarCable("F")
     sala.presionarCable("4")
     sala.presionarCable("S")
-    assert.equals(2, combate.enemigosVivos().size())
+    assert.equals(3, combate.enemigosVivos().size())
     combate.enemigosVivos().forEach({ enemigo => assert.that(game.hasVisual(enemigo)) })
-    jugador.position(game.at(8, 6))
+    jugador.position(game.at(9, 4))
     combate.enemigosVivos().first().detectarJugador()
     assert.that(jugador.enCombate())
   }
