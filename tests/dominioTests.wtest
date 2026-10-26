@@ -6,6 +6,7 @@ import obstaculos.*
 import empuje.*
 import panel.*
 import sala.*
+import oscuridad.*
 
 describe "groupo de tests" {
 
@@ -163,6 +164,22 @@ describe "groupo de tests" {
 
     salidaPrueba.interactuar(jugador)
     assert.that(avanzada)
+  }
+
+  test "el velo oscuro se mantiene centrado sobre el jugador" {
+    const velo = new VeloOscuro()
+    jugador.position(game.at(5, 5))
+    assert.equals(game.at(-10, -6), velo.position())
+    jugador.position(game.at(14, 8))
+    assert.equals(game.at(-1, -3), velo.position())
+  }
+
+  test "la niebla se retira por completo al ocultarla" {
+    const niebla = new Niebla()
+    niebla.elementos().forEach({ elemento => game.addVisual(elemento) })
+    assert.that(niebla.elementos().all({ elemento => game.hasVisual(elemento) }))
+    niebla.ocultar()
+    assert.that(niebla.elementos().all({ elemento => !game.hasVisual(elemento) }))
   }
 
 }
