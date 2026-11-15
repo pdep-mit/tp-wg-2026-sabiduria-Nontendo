@@ -1,133 +1,107 @@
-# La sala de los tres sellos — Checkpoint 1
+# La Leyenda de Celda — Nontendo
 
-**Grupo:** Nontendo
+Mazmorra conectada de siete habitaciones, con un puente rodeado de lava,
+llaves, armadura, arco, oscuridad, puzzles y un combate final por el medallón.
+Implementada en Wollok Game, sobre las mecánicas de los checkpoints anteriores.
 
-**Integrantes:**
-- Lautaro Feruglio
-- Agustin Eduardo Gomez Utinko
-- Ignacio Mariñansky
-- Mauro Lautaro Montoya
-- Facundo Sanzo
-
-## Consignas
-
-Todo lo que necesitan saber está explicado en [este documento](https://docs.google.com/document/d/1KoB12RIZk_xPhmnOJ-EfLIPNwkETD_EaYMp2srDu9QY/edit?tab=t.0#heading=h.wnm2lu4cls8j). Para todo lo demás, aseguren prestar atención a los comunicados por Discord.
-
-Recuerden que para cada checkpoint hay [expectativas mínimas](https://docs.google.com/document/d/1KoB12RIZk_xPhmnOJ-EfLIPNwkETD_EaYMp2srDu9QY/edit?tab=t.0#heading=h.56t0qdv908v3) respecto a los conceptos aplicados. Procuren:
-- Validar su idea con el equipo docente que corresponda por su canal de Discord
-- Para cada checkpoint, asegurar que implementaron lo necesario para esa instancia, y crear un **tag** en el repositorio para facilitar la comparación entre versiones final e intermedias.
-- Para la demo final, crear un nuevo tag **demo** y actualizar este README con todo lo necesario.
-
-# Cómo jugar
-
-## Objetivo
-
-Una demo de una sola sala, con sprites de **The Legend of Zelda: A Link to the Past**.
-Activá los botones en orden **1 → 2 → 3**, recogé la llave y abrí la salida.
-El orden aparece en pantalla: el puzzle es fácil a propósito para presentar
-las mecánicas del primer checkpoint.
-
-1. El botón **1** enciende la antorcha.
-2. El botón **2** abre la barrera del sector derecho.
-3. El botón **3** hace aparecer la llave.
-4. La llave se recoge con **E** y aparece en el inventario.
-5. Acercate a la puerta y pulsá **E** para ganar.
-
-Si activás un botón fuera de orden, se apagan los botones y la antorcha,
-se cierra la barrera y se reinicia la secuencia. Una secuencia completada
-queda resuelta hasta reiniciar la partida.
-
-El colgante cerca del inicio se puede recoger para mostrar el sistema
-genérico de objetos e inventario. No es necesario para ganar.
-Los pinchos rojos quitan un corazón cada vez que entrás a su celda.
-Con tres impactos perdés. Podés evitarlos por completo para resolver el puzzle.
-
-## Controles
-
-| Tecla | Acción |
-| --- | --- |
-| Flechas | Mover a Link una celda |
-| E | Activar un botón, recoger un objeto o abrir la salida |
-| R | Reiniciar toda la demo, incluso después de ganar o perder |
-
-Para interactuar, parate sobre el objeto o en una celda contigua
-(sin diagonales). Si hay varios objetos cerca, se usa el más próximo.
-Hacé clic en el juego si el navegador no recibe las teclas.
-La vida, los objetos guardados y las indicaciones aparecen arriba.
+**Integrantes:** Lautaro Feruglio, Agustin Eduardo Gomez Utinko,
+Ignacio Mariñansky, Mauro Lautaro Montoya y Facundo Sanzo.
 
 ## Ejecutar
 
-Desde la carpeta del proyecto, con Wollok CLI instalado:
+Desde la raíz del repositorio, con Wollok CLI instalado:
 
 ```text
 wollok run juego.NombreDeJuego
 ```
 
-Abrí la dirección que indique la terminal, normalmente
-[http://localhost:3000](http://localhost:3000).
-También se puede ejecutar `juego.wpgm` desde la extensión de Wollok.
+Abrí la dirección que indique la terminal (normalmente
+[http://localhost:3000](http://localhost:3000)). También podés ejecutar
+`juego.wpgm` desde la extensión de Wollok. El proyecto usa `assets` como
+carpeta de recursos, según `package.json`.
 
-### Si aparece una pantalla en blanco al ejecutar
+Si el puerto está ocupado, detené la instancia anterior con Ctrl+C o usá:
 
-Si el navegador informa que no encuentra las imágenes, revisá la carpeta
-abierta como proyecto en el editor. La carpeta del repositorio
-`tp-wg-2026-sabiduria-Nontendo` contiene su propio `package.json`, con
-`resourceFolder: "assets"`.
+```text
+wollok run juego.NombreDeJuego --port 3001
+```
 
-Para trabajar desde la carpeta superior `juegoWollok`, también se dejó
-un `package.json` allí, con la ruta
-`tp-wg-2026-sabiduria-Nontendo/assets`. Reiniciá la ejecución después de
-cambiar esa configuración: el servidor toma la ruta al arrancar.
+## Controles
 
-Usá una sola instancia del juego. Si ya hay una demo ejecutándose en el
-puerto 3000, detenela en la terminal con **Ctrl+C** antes de ejecutar
-`juego.wpgm` nuevamente desde el editor.
-
-En ese caso la terminal puede mostrar `EADDRINUSE`; esta versión del
-ejecutor también puede terminar mostrando `ERR_INVALID_ARG_TYPE` al
-procesar ese error. No significa que el archivo del juego esté vacío.
-
-Después de ejecutar el programa, abrí la dirección que indique **esa
-ejecución** y recargá la pestaña. Abrir el archivo `.wpgm` en el editor
-por sí solo no inicia el juego.
-
-## Recorrido corto para presentar
-
-1. Desde el inicio, movete una celda a la derecha y pulsá **E**:
-   el colgante desaparece del mapa y se agrega al inventario.
-2. Subí dos celdas y pulsá **E**, debajo del botón 1:
-   se enciende la antorcha.
-3. Avanzá tres celdas a la derecha y pulsá **E**, debajo del botón 2:
-   se abre la barrera.
-4. Avanzá otras tres celdas a la derecha y pulsá **E**, debajo del botón 3:
-   aparece la llave.
-5. Cruzá el paso hacia la derecha. Recogé la llave con **E**
-   y acercate a la salida de la esquina superior derecha.
-6. Pulsá **E** para ganar y **R** para dejar la demo lista otra vez.
-
-Para mostrar alternativas: activá primero el botón 2; intentá abrir la
-puerta antes de recoger la llave; o caminá sobre los pinchos.
-
-## Alcance y entidades del primer checkpoint
-
-| Característica | Entidades y responsabilidad |
+| Tecla | Acción |
 | --- | --- |
-| Movimiento y límites | `jugador`, `sala`, `Muro`: movimiento por celdas, límites y obstáculos |
-| Puzzle ordenado | `Boton`, `puzzle`: secuencia 1–2–3 y reinicio por error |
-| Efectos distintos | `antorcha`, `barrera`, llave: encender, abrir y revelar |
-| Objetos e inventario | `ObjetoRecogible`, lista de inventario de `jugador`: recolección sin duplicados |
-| Salida condicionada | `salida`: verifica que el jugador tenga la llave |
-| Daño y derrota opcionales | `Pincho`, vida de `jugador`, estado de `sala` |
-| Presentación y controles | Carteles de vida, inventario y estado; `configuracion` |
+| Flechas | Mover una celda; empujar bloques al caminar contra ellas |
+| E | Interactuar, recoger, abrir cofres o cruzar puertas |
+| T | Reponer las piedras de la habitación sin perder el avance |
+| R | Reiniciar toda la partida, incluso después de ganar o perder |
+| 1 / 2 en combate | Seleccionar golpe / arco (requiere haberlo recogido) |
+| Flecha tras seleccionar un ataque | Atacar en esa dirección |
+| Espacio en combate | Terminar el turno |
+| 1, 2, 3, 4 y A, S, D, F en el panel | Conectar cables |
 
-Al ganar o perder se bloquean el movimiento y la interacción; **R** sigue
-disponible. El reinicio restaura objetos, vida, botones y barrera.
+Para interactuar, parate sobre el objeto o a una celda de distancia.
+Las puertas también se cruzan caminando sobre el hueco abierto del muro.
+En combate hay tres pasos y un ataque por turno. E y T quedan deshabilitadas
+hasta terminar el encuentro. Hacé clic en el juego si no recibe las teclas.
 
-Los recursos y sus fuentes están detallados en [assets/CREDITOS.md](assets/CREDITOS.md).
+## Leer el combate
 
-# Explicaciones
+Los tres corazones quedan en una franja propia, siempre sobre la oscuridad,
+el panel de cables y el humo. El inventario ocupa el extremo derecho.
 
-La implementación de cada mecánica del primer checkpoint está explicada
-paso a paso en [docs/mecanicas.md](docs/mecanicas.md).
+- El encabezado indica **TU TURNO** o **TURNO ENEMIGO**, la ronda, pasos
+  restantes, ataque disponible y el resultado de la ultima accion.
+- **1** selecciona el golpe y **2** el arco. La tarjeta elegida se ilumina.
+  Las flechas atacan en esa direccion; **Esc** cancela para volver a moverse.
+- El alcance se marca en el piso y los objetivos en otro color. La marca
+  se corta en paredes, piedras y el primer enemigo, igual que el ataque real.
+- Las barras sobre los slimes muestran su salud. El enemigo que esta actuando
+  tiene un marco naranja; durante su turno las acciones aparecen deshabilitadas.
+- **Espacio** termina el turno. Su tarjeta se destaca cuando ya no quedan
+  pasos ni ataque. Fallar un ataque permite intentar otra direccion o cancelar.
 
-Las explicaciones teóricas y diagramas van a encontrarse en [explicaciones.md](explicaciones.md) a partir del Checkpoint #2.
+## Explorar
+
+Explora las salas y descubre sus mecanismos. No hay pistas de soluciones
+en pantalla. El inventario muestra los sprites de los objetos; las llaves
+se consumen al abrir su cerradura. La armadura y el arco se conservan.
+
+La salud se representa con tres corazones, incluso durante el combate.
+Los slimes se materializan sobre los charcos, con humo, despues de recuperar
+la vision. El combate empieza al entrar en una sala con enemigos vivos;
+en la sala oscura comienza al terminar su aparicion. El slime izquierdo
+del final es un guardian reforzado con corona, mas vida, velocidad y dano.
+
+Los botones recuperan su base circular. Los tres corazones y la armadura
+roja usan los sprites de ALTTP; al equiparse la armadura, Link cambia
+de traje en las cuatro direcciones. La victoria reemplaza toda la escena.
+
+La sala de piedras exige despejar un camino moviendo bloques que se
+estorban entre si. T repone las piedras y te devuelve a su entrada.
+
+Las habitaciones conservan los objetos recogidos, enemigos derrotados y
+mecanismos resueltos durante la partida. R inicia una partida nueva;
+no hay guardado en disco.
+
+## Verificación y recursos
+
+```text
+wollok lint
+wollok test --skipValidations
+```
+
+Las pruebas incluyen un recorrido completo con movimiento, interacciones y
+combate reales, los bloqueos de progresión, persistencia, reinicio y aparición
+condicionada del medallón. Los checkpoints originales se conservan como
+fixtures de las pruebas de regresión.
+
+La distribución y sus responsabilidades están explicadas en
+[docs/supernivel.md](docs/supernivel.md). El combate se documenta en
+[docs/combate-tactico.md](docs/combate-tactico.md).
+
+Los fondos y las variaciones del piso son dibujos propios. Los sprites
+de corazones, armadura roja y Link se recortan de las fuentes de ALTTP.
+Todos estos recursos se generan mediante
+`tools/generar_supernivel.ps1` (PowerShell con System.Drawing). Se incluyen
+los PNG listos para jugar. Los recursos anteriores y sus fuentes están
+detallados en [assets/CREDITOS.md](assets/CREDITOS.md).

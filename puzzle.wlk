@@ -2,6 +2,24 @@ import wollok.game.*
 import sala.*
 import obstaculos.*
 
+// Motor compartido por los sellos del checkpoint y la secuencia B-A-C.
+class SecuenciaOrdenada {
+  const property orden
+  var property progreso = 0
+  method resuelto() = progreso == orden.size()
+  method activo(etiqueta) = orden.take(progreso).contains(etiqueta)
+  method reiniciar() { progreso = 0 }
+  method avanzar(etiqueta) {
+    if (self.resuelto()) return true
+    if (etiqueta != orden.get(progreso)) {
+      progreso = 0
+      return false
+    }
+    progreso += 1
+    return true
+  }
+}
+
 class Boton {
   const property numero
   const property position
@@ -22,7 +40,8 @@ class Boton {
 }
 
 object puzzle {
-  var property progreso = 0
+  const secuencia = new SecuenciaOrdenada(orden = [1, 2, 3])
+  method progreso() = secuencia.progreso()
   const property botones = [
     new Boton(numero = 1, position = game.at(3, 5),
       onActivar = {
@@ -43,19 +62,18 @@ object puzzle {
       },
       onDesactivar = { })
   ]
-  method resuelto() = progreso == botones.size()
+  method resuelto() = secuencia.resuelto()
   method presionar(boton) {
     if (self.resuelto()) sala.informar("Puzzle completo. Busca la llave a la derecha.")
-    else if (boton.numero() == progreso + 1) {
+    else if (secuencia.avanzar(boton.numero())) {
       boton.activar()
-      progreso += 1
     } else {
       self.reiniciar()
       sala.informar("Orden incorrecto. Volve a empezar: 1 > 2 > 3.")
     }
   }
   method reiniciar() {
-    progreso = 0
+    secuencia.reiniciar()
     botones.forEach({ boton => boton.desactivar() })
   }
 }

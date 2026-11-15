@@ -10,13 +10,13 @@ class GolpeSinDanio inherits Fisico {
 
 describe "La habilidad aplica el dano" {
   test "la habilidad envia su dano al objetivo" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     new Fisico().daniar(jugador)
     assert.equals(1, jugador.vida())
   }
 
   test "el enemigo delega el dano a su habilidad" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const enemigo = new Enemigo(position = game.at(3, 2), habilidad = new GolpeSinDanio())
     combate.incorporar(enemigo)
     jugador.pasarTurno()
@@ -26,7 +26,7 @@ describe "La habilidad aplica el dano" {
   }
 
   test "ejecutar un ataque tambien delega a daniar" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const enemigo = new Enemigo(position = game.at(3, 2))
     assert.that(new GolpeSinDanio().ejecutar(jugador, "derecha", [enemigo]))
     assert.equals(3, enemigo.vida())

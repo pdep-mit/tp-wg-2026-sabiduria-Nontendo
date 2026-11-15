@@ -6,6 +6,10 @@ class Caja {
   method image() = "zelda/caja.png"
 }
 
+class PiedraMovil inherits Caja {
+  override method image() = "supernivel/piedra.png"
+}
+
 class Losa {
   const property position
   const property ocupantes
@@ -16,7 +20,8 @@ class Losa {
 
 class PuzzleDeCajas {
   const property resuelta
-  const cajas = [new Caja(position = game.at(5, 3)), new Caja(position = game.at(10, 3))]
+  const property posicionesIniciales = [game.at(5, 3), game.at(10, 3)]
+  const property cajas = posicionesIniciales.map({ posicion => self.nuevaCaja(posicion) })
   const losas = [
     new Losa(position = game.at(5, 2), ocupantes = cajas, resuelta = resuelta),
     new Losa(position = game.at(10, 2), ocupantes = cajas, resuelta = resuelta),
@@ -24,6 +29,10 @@ class PuzzleDeCajas {
   ]
 
   method elementos() = losas + cajas
+  method nuevaCaja(posicion) = new Caja(position = posicion)
+  method reiniciar() {
+    (0..(cajas.size() - 1)).forEach({ indice => cajas.get(indice).position(posicionesIniciales.get(indice)) })
+  }
   method resuelto() = losas.all({ losa => losa.presionada() })
   method posicionValida(posicion) = posicion.x() >= 2 and posicion.x() <= 13 and posicion.y() >= 2 and posicion.y() <= 7
   method hayCajaEn(posicion) = cajas.any({ caja => caja.position() == posicion })
@@ -38,4 +47,13 @@ class PuzzleDeCajas {
     }
     return false
   }
+}
+
+class PuzzleDePiedras inherits PuzzleDeCajas(resuelta = { false }, posicionesIniciales = [
+  game.at(6, 3), game.at(7, 3), game.at(4, 2), game.at(10, 4),
+  game.at(7, 6), game.at(8, 3), game.at(8, 4), game.at(9, 2)
+]) {
+  override method nuevaCaja(posicion) = new PiedraMovil(position = posicion)
+  override method elementos() = cajas
+  override method posicionValida(posicion) = posicion.x() >= 1 and posicion.x() <= 14 and posicion.y() >= 1 and posicion.y() <= 8
 }

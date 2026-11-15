@@ -4,7 +4,7 @@ import sala.*
 
 describe "Parpadeo al recibir dano" {
   test "el jugador se oculta y reaparece dos veces sin salir del tablero" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const inicio = io.currentTime()
     jugador.recibirDanio(1)
     assert.equals("zelda/link-abajo.png", jugador.image())
@@ -20,7 +20,7 @@ describe "Parpadeo al recibir dano" {
   }
 
   test "el enemigo tambien parpadea dos veces" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const enemigo = new Enemigo(position = game.at(12, 7))
     enemigo.aparecer()
     const inicio = io.currentTime()
@@ -36,7 +36,7 @@ describe "Parpadeo al recibir dano" {
   }
 
   test "el escudo evita el dano y el parpadeo" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     jugador.activarEscudo()
     const inicio = io.currentTime()
     jugador.recibirDanio(1)
@@ -46,7 +46,7 @@ describe "Parpadeo al recibir dano" {
   }
 
   test "reiniciar restaura el sprite aunque hubiera un parpadeo pendiente" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     jugador.recibirDanio(1)
     const inicio = io.currentTime()
     io.flushEvents(inicio + 120)
@@ -58,7 +58,7 @@ describe "Parpadeo al recibir dano" {
   }
 
   test "otro golpe reinicia el parpadeo y descarta los cambios del golpe anterior" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const inicio = io.currentTime()
     jugador.recibirDanio(1)
     io.flushEvents(inicio + 60)
@@ -78,7 +78,7 @@ describe "Parpadeo al recibir dano" {
   }
 
   test "un enemigo derrotado no reaparece por un parpadeo pendiente" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const enemigo = new Enemigo(position = game.at(12, 7))
     enemigo.aparecer()
     const inicio = io.currentTime()

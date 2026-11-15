@@ -1,5 +1,6 @@
 import wollok.game.*
 import sala.*
+import interfaz.*
 
 class PanelDeCables {
   const property position
@@ -24,8 +25,8 @@ class PanelDeCables {
     return game.at(8.75, 3.51)
   }
 
-  method elementosIniciales() = [marca]
-  method interactuable() = if (!activo) [marca] else []
+  method elementosIniciales() = if (self.resuelto()) [] else [marca]
+  method interactuable() = if (!activo and !self.resuelto()) [marca] else []
   method bloqueaMovimiento() = activo and !self.resuelto()
 
   method resuelto() = conectados.size() == pares.size()
@@ -40,7 +41,8 @@ class PanelDeCables {
     game.addVisual(telon)
     game.addVisual(tablero)
     nodos.forEach({ nodo => game.addVisual(nodo) })
-    sala.informar("Panel encontrado! Conecta cada numero con su letra (1234 y ASDF).")
+    sala.informar("Panel de cables.")
+    interfaz.mostrar()
   }
 
   method ocultar() {

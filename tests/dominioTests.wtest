@@ -26,7 +26,7 @@ describe "groupo de tests" {
   }
 
   test "Si la vida llega a 0 la sala pasa a estado perdido" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     jugador.vida(1)
     assert.that(sala.enCurso())
     jugador.recibirDanio(1)
@@ -36,7 +36,7 @@ describe "groupo de tests" {
 
   // Tests de recoger objetos
   test "Recoger la llave si el jugador está cerca" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
 
     sala.revelarLlave()
     jugador.position(game.at(11, 5)) // La llave está en (12, 5)
@@ -60,7 +60,7 @@ describe "groupo de tests" {
 
   // Tests de activar puzzles y su funcionamiento
   test "Activar el primer botón del puzzle si el jugador está al lado" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     // El botón 1 está en la posición (3, 5)
     jugador.position(game.at(3, 4)) // Distancia = 1
 
@@ -70,6 +70,7 @@ describe "groupo de tests" {
   }
 
   test "El puzzle de botones progresa al presionarlos en el orden correcto" {
+    mazmorra.iniciarDemoAnterior()
     puzzle.reiniciar()
     assert.equals(0, puzzle.progreso())
     puzzle.presionar(puzzle.botones().get(0))
@@ -115,7 +116,7 @@ describe "groupo de tests" {
   }
 
   test "mazmorra.avanzar cambia la sala actual a la Sala del apagón" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     assert.that(mazmorra.salaActual().mensajeInicial().contains("tres sellos"))
     mazmorra.avanzar()
     assert.that(mazmorra.salaActual().mensajeInicial().contains("apagon"))
@@ -131,7 +132,7 @@ describe "groupo de tests" {
   }
 
   test "La barrera permite o no pasar al jugador por su posición" {
-    mazmorra.reiniciarTodo()
+    mazmorra.iniciarDemoAnterior()
     const posicionBarrera = game.at(10, 4)
 
     // Barrera cerrada, el personaje no debería poder pasar

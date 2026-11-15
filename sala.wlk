@@ -7,6 +7,8 @@ import panel.*
 import empuje.*
 import oscuridad.*
 import combate.*
+import supernivel.*
+import interfaz.*
 
 class Sala {
   var estado = "jugando"
@@ -22,7 +24,12 @@ class Sala {
   method presionarCable(etiqueta) {}
   method alMoverse() {}
   method movimientoBloqueado() = false
+  method modoInterfaz() = "explorar"
   method hayCajaEn(posicion) = false
+  method requiereArco() = false
+  method reiniciarCajas() {}
+  method mensajeTrasCombate() = "Combate terminado! Podes seguir explorando."
+  method alSalir() {}
 
   method enCurso() = estado == "jugando"
   method permitePasar(posicion) =
@@ -31,20 +38,26 @@ class Sala {
     and !self.obstaculos().any({ obstaculo => obstaculo.bloqueaPaso(posicion) })
   method puedeAvanzarA(destino, siguiente) = self.permitePasar(destino)
   method interactuar() {
-    if (self.enCurso()) {
+    if (self.enCurso() and !jugador.enCombate()) {
       const cercanos = self.interactuables().filter({ objeto => objeto.disponible() and objeto.position().distance(jugador.position()) <= 1 })
-      if (cercanos.isEmpty()) self.informar("Acercate a algo interactuable y pulsa E.")
+      if (cercanos.isEmpty()) self.informar("")
       else cercanos.min({ objeto => objeto.position().distance(jugador.position()) }).interactuar(jugador)
     }
   }
-  method informar(texto) { mensaje = texto }
+  method informar(texto) {
+    mensaje = texto
+    if (jugador.enCombate()) combate.anotar(texto)
+  }
   method ganar() {
     estado = "ganado"
-    self.informar("GANASTE! R para volver a jugar.")
+    combate.reiniciar()
+    game.clear()
+    game.boardGround("supernivel/victoria.png")
+    mazmorra.restaurarControles()
   }
   method perder() {
     estado = "perdido"
-    self.informar("SIN VIDA! R para reiniciar la demo.")
+    self.informar("DERROTA. R para reiniciar.")
   }
   method iniciar() {
     game.boardGround(self.fondo())
@@ -52,8 +65,15 @@ class Sala {
     estado = "jugando"
     mensaje = self.mensajeInicial()
     self.elementosDeEscena().forEach({ elemento => game.addVisual(elemento) })
-    [jugador, cartelEstado, cartelVida, cartelInventario, vistaCombate].forEach({ visual => game.addVisual(visual) })
+    interfaz.indicadoresDeEscena().forEach({ visual => game.addVisual(visual) })
+    game.addVisual(jugador)
+    interfaz.mostrar()
     self.registrarColisiones()
+  }
+  method jugadorAlFrente() {
+    if (game.hasVisual(jugador)) game.removeVisual(jugador)
+    game.addVisual(jugador)
+    interfaz.mostrar()
   }
 }
 
@@ -76,7 +96,7 @@ class SalaDeLosTresSellos inherits Sala {
   override method interactuables() = puzzle.botones() + [recuerdo, salida] + (if (llaveVisible) [llave] else [])
   override method elementosDeEscena() = muros + pinchos + puzzle.botones() + [barrera, antorcha, salida, recuerdo]
   override method registrarColisiones() {
-    pinchos.forEach({ pincho => game.onCollideDo(pincho, { elemento => pincho.chocarCon(elemento) }) })
+    game.onCollideDo(jugador, { elemento => if (pinchos.contains(elemento)) elemento.chocarCon(jugador) })
   }
   method revelarLlave() {
     llaveVisible = true
@@ -99,6 +119,7 @@ class SalaDelApagon inherits Sala {
   override method interactuables() = [salida] + panel.interactuable() + (if (restoVisible) [escudo] else [])
   override method elementosDeEscena() = [salida] + panel.elementosIniciales() + niebla.elementos()
   override method movimientoBloqueado() = panel.bloqueaMovimiento()
+  override method modoInterfaz() = if (panel.bloqueaMovimiento()) "cables" else "explorar"
   override method hayCajaEn(posicion) = restoVisible and puzzleDeCajas.hayCajaEn(posicion)
   override method presionarCable(etiqueta) { panel.presionar(etiqueta) }
   override method alMoverse() {
@@ -126,14 +147,47 @@ class SalaDelApagon inherits Sala {
     new Enemigo(position = game.at(10, 4), identificador = "guardia1").aparecer()
     new Enemigo(position = game.at(13, 8), identificador = "guardia2").aparecer()
     new Enemigo(position = game.at(13, 7), identificador = "guardia3").aparecer()
+    combate.comenzarEncuentro()
   }
 }
 
 object mazmorra {
-  var property salaActual = new SalaDeLosTresSellos()
+  var property salaActual = new SalaDelPuente()
+  const salas = []
   var alLimpiar = {}
   method configurarAlLimpiar(bloque) { alLimpiar = bloque }
+  method restaurarControles() { alLimpiar.apply() }
   method reiniciarTodo() {
+    salaActual.alSalir()
+    combate.reiniciar()
+    game.clear()
+    jugador.reiniciar()
+    salas.clear()
+    salas.addAll([new SalaDelPuente(), new PasilloReal(), new SalaOscura(), new SalaDelArco(), new SalaDeLaSecuencia(), new SalaDeLasCajas(), new PasajeSuperior(), new SalaDelMedallon()])
+    salaActual = self.habitacion("1-0")
+    jugador.position(game.at(7, 1))
+    salaActual.iniciar()
+    alLimpiar.apply()
+  }
+  method habitacion(identificador) = salas.find({ habitacion => habitacion.identificador() == identificador })
+  method irA(identificador, llegada) {
+    if (salaActual.enCurso() and !jugador.enCombate()) {
+      salaActual.alSalir()
+      combate.reiniciar()
+      game.clear()
+      salaActual = self.habitacion(identificador)
+      jugador.restaurarSprite()
+      jugador.position(llegada)
+      salaActual.iniciar()
+      alLimpiar.apply()
+    }
+  }
+  method reiniciarCajas() {
+    if (salaActual.enCurso() and !jugador.enCombate() and !salaActual.movimientoBloqueado()) salaActual.reiniciarCajas()
+  }
+  // Conserva los checkpoints como fixtures para sus pruebas de regresion.
+  method iniciarDemoAnterior() {
+    combate.reiniciar()
     game.clear()
     jugador.reiniciar()
     salaActual = new SalaDeLosTresSellos()
@@ -167,17 +221,7 @@ object sala {
 }
 
 object cartelEstado {
-  method position() = game.at(7.5, 11)
-  method text() = sala.mensaje()
+  method position() = game.at(6, 11)
+  method text() = if (jugador.enCombate()) "" else interfaz.textoCorto(sala.mensaje())
   method textColor() = "F8E7B5"
-}
-object cartelVida {
-  method position() = game.at(2, 10)
-  method text() = if (jugador.enCombate()) "" else "VIDA: " + jugador.vida() + " / 3"
-  method textColor() = "FF9999"
-}
-object cartelInventario {
-  method position() = game.at(9, 10)
-  method text() = if (jugador.enCombate()) "" else "INVENTARIO: " + jugador.inventarioTexto()
-  method textColor() = "B8F0CA"
 }

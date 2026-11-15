@@ -4,9 +4,15 @@ import combate.*
 import habilidades.*
 
 class Inventario {
-  const objetos = []
+  const property objetos = []
   method tiene(nombre) = objetos.any({ objeto => objeto.nombre() == nombre })
-  method agregar(objeto) { objetos.add(objeto) }
+  method agregar(objeto) { if (!self.tiene(objeto.nombre())) objetos.add(objeto) }
+  method consumir(nombre) {
+    const encontrados = objetos.filter({ objeto => objeto.nombre() == nombre })
+    if (encontrados.isEmpty()) return false
+    objetos.remove(encontrados.first())
+    return true
+  }
   method vaciar() { objetos.clear() }
   method texto() = if (objetos.isEmpty()) "vacio" else objetos.map({ objeto => objeto.nombre() }).join(" + ")
 }
@@ -97,7 +103,7 @@ object jugador inherits Combatiente {
   var property habilidadSeleccionada = null
   override method turnoAutomatico() = false
 
-  method image() = self.imagenVisible("zelda/link-" + direccion + ".png")
+  method image() = self.imagenVisible((if (self.tiene("armadura lava")) "supernivel/link-rojo-" else "zelda/link-") + direccion + ".png")
   method moverArriba() { self.moverA(position.up(1), position.up(2), "arriba") }
   method moverAbajo() { self.moverA(position.down(1), position.down(2), "abajo") }
   method moverIzquierda() { self.moverA(position.left(1), position.left(2), "izquierda") }
@@ -108,11 +114,13 @@ object jugador inherits Combatiente {
       direccion = orientacion
       if (enCombate and habilidadSeleccionada != null) {
         self.atacar(orientacion)
-      } else if ((!enCombate or pasosRestantes > 0) and self.puedeMoverA(destino, siguiente)) {
-        position = destino
-        if (enCombate) pasosRestantes -= 1
-        else sala.alMoverse()
-      }
+      } else if (!enCombate or pasosRestantes > 0) {
+        if (self.puedeMoverA(destino, siguiente)) {
+          position = destino
+          if (enCombate) pasosRestantes -= 1
+          else sala.alMoverse()
+        } else if (enCombate) sala.informar("Paso bloqueado.")
+      } else sala.informar("Sin pasos. Ataca o pasa turno.")
     }
   }
 
@@ -124,22 +132,36 @@ object jugador inherits Combatiente {
 
   method seleccionarHabilidad(numero) {
     if (sala.enCurso() and self.puedeActuarEnCombate() and ataqueDisponible and numero >= 1 and numero <= habilidades.size()) {
-      habilidadSeleccionada = habilidades.get(numero - 1)
+      if (numero == 2 and sala.actual().requiereArco() and !self.tiene("arco")) {
+        habilidadSeleccionada = null
+        sala.informar("Arco no equipado.")
+      } else {
+        habilidadSeleccionada = habilidades.get(numero - 1)
+        sala.informar("Flecha: atacar. ESC: cancelar.")
+      }
     }
   }
   method atacar(orientacion) {
     if (self.puedeActuarEnCombate() and ataqueDisponible and habilidadSeleccionada != null) {
       const acerto = habilidadSeleccionada.ejecutar(self, orientacion, combate.enemigosVivos().filter({ enemigo => enemigo.enCombate() }))
-      habilidadSeleccionada = null
-      if (acerto) ataqueDisponible = false
-      else sala.informar("No hay un enemigo al alcance en esa direccion.")
+      if (acerto) {
+        habilidadSeleccionada = null
+        ataqueDisponible = false
+      } else sala.informar("Sin objetivo. Otra flecha o ESC.")
       combate.verificarFinal()
     }
   }
   method pasarTurno() {
     if (sala.enCurso() and self.puedeActuarEnCombate()) {
       habilidadSeleccionada = null
+      combate.anotarTurno("Actuan los enemigos.")
       combate.avanzarTurno()
+    }
+  }
+  method cancelarAtaque() {
+    if (self.puedeActuarEnCombate() and habilidadSeleccionada != null) {
+      habilidadSeleccionada = null
+      sala.informar("Ataque cancelado.")
     }
   }
   override method salirDelCombate() {
@@ -149,6 +171,8 @@ object jugador inherits Combatiente {
   method guardar(objeto) { inventario.agregar(objeto) }
   method tiene(nombre) = inventario.tiene(nombre)
   method inventarioTexto() = inventario.texto()
+  method objetosInventario() = inventario.objetos()
+  method consumir(nombre) = inventario.consumir(nombre)
 
   method activarEscudo() { proteccion.activar() }
   method recibirDanio(cantidad) {
@@ -159,7 +183,7 @@ object jugador inherits Combatiente {
         sala.perder()
         combate.verificarFinal()
       }
-      else sala.informar("Recibiste daño: perdiste salud. ¡Cuidado!")
+      else sala.informar("Recibiste -" + cantidad + " de salud.")
     }
   }
   method reiniciar() {
@@ -179,20 +203,32 @@ class Enemigo inherits Combatiente {
   const property habilidad = new Fisico(nombre = "Mordida", danio = 0.5)
   var visible = false
   const property identificador = "enemigo"
+  const property sprite = "zelda/enemigo.png"
+  const property alMorir = {}
+  const property milisegundosPorPaso = 220
+  var property numeroDeEncuentro = 0
+  var property vidaMaxima = 0
+  const property barraVida = new BarraDeVidaEnemigo(enemigo = self)
   var versionMovimiento = 0
 
-  method image() = self.imagenVisible("zelda/enemigo.png")
+  method nombreCombate() = "Slime " + numeroDeEncuentro
+  method registrarVidaMaxima() { if (vidaMaxima == 0) vidaMaxima = vida }
+  method image() = self.imagenVisible(sprite)
   method aparecer() {
-    visible = true
-    combate.registrar(self)
-    game.addVisual(self)
-    game.onTick(250, identificador, { self.detectarJugador() })
-  }
-  method jugadorEstaCerca() = combate.distancia(position, jugador.position()) < 2
-  method detectarJugador() {
-    if (self.estaVivo() and !enCombate and sala.enCurso() and jugador.estaVivo() and self.jugadorEstaCerca()) {
-      combate.incorporar(self)
+    if (self.estaVivo() and !visible) {
+      visible = true
+      combate.registrar(self)
+      game.addVisual(self)
+      game.addVisual(barraVida)
     }
+  }
+  method ocultar() {
+    if (visible) {
+      game.removeVisual(self)
+      if (game.hasVisual(barraVida)) game.removeVisual(barraVida)
+      visible = false
+    }
+    self.salirDelCombate()
   }
   method jugarTurno() {
     if (self.puedeActuarEnCombate()) {
@@ -206,10 +242,10 @@ class Enemigo inherits Combatiente {
     const version = versionMovimiento
     if (pasos > 0) {
       (1..pasos).forEach({ indice =>
-        game.schedule(indice * 220, { self.darPaso(camino.get(indice), version) })
+        game.schedule(indice * milisegundosPorPaso, { self.darPaso(camino.get(indice), version) })
       })
     }
-    game.schedule((pasos + 1) * 220, { self.completarTurno(version) })
+    game.schedule((pasos + 1) * milisegundosPorPaso, { self.completarTurno(version) })
   }
   method movimientoVigente(version) = version == versionMovimiento and enCombate and !enEspera
   method darPaso(destino, version) {
@@ -235,12 +271,33 @@ class Enemigo inherits Combatiente {
     }
   }
   method recibirDanio(cantidad) {
-    vida = (vida - cantidad).max(0)
-    if (cantidad > 0 and self.estaVivo()) self.parpadear()
-    if (!self.estaVivo() and visible) {
-      game.removeVisual(self)
-      game.removeTickEvent(identificador)
-      visible = false
+    if (self.estaVivo()) {
+      self.registrarVidaMaxima()
+      vida = (vida - cantidad).max(0)
+      if (cantidad > 0 and enCombate) combate.anotar(self.nombreCombate() + " recibe -" + cantidad + ".")
+      if (cantidad > 0 and self.estaVivo()) self.parpadear()
+      if (!self.estaVivo() and visible) {
+        game.removeVisual(self)
+        if (game.hasVisual(barraVida)) game.removeVisual(barraVida)
+        visible = false
+      }
+      if (!self.estaVivo()) alMorir.apply()
     }
   }
+}
+
+// Modelo comun; el guardian conserva su silueta y suma una corona visible.
+class Slime inherits Enemigo(vida = 2, sprite = "zelda/enemigo.png") {}
+
+class SlimeGuardian inherits Slime(vida = 4, pasosPorTurno = 5,
+  habilidad = new Fisico(nombre = "Embestida", danio = 1),
+  sprite = "supernivel/slime-guardian.png", milisegundosPorPaso = 160) {
+  override method nombreCombate() = "Guardian"
+}
+
+class BarraDeVidaEnemigo {
+  const property enemigo
+  method position() = enemigo.position().up(1).right(0.083333)
+  method segmentos() = ((enemigo.vida() / enemigo.vidaMaxima()) * 8).ceil().max(0).min(8)
+  method image() = if (enemigo.enCombate() and enemigo.estaVivo()) "supernivel/vida-enemigo-" + self.segmentos() + ".png" else "zelda/transparente.png"
 }

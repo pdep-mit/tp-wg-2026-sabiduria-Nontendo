@@ -1,0 +1,70 @@
+import wollok.game.*
+import personajes.*
+import combate.*
+import sala.*
+
+object relojAlSeparar {
+  method avanzar(milisegundos) {
+    const inicio = io.currentTime()
+    (1..(milisegundos / 16).ceil()).forEach({ frame => io.flushEvents(inicio + frame * 16) })
+  }
+}
+
+describe "Separar slimes sin trabar el turno" {
+  test "el slime rodea a los dos que bloquean sus rutas rectas sin recorrer toda la sala" {
+    mazmorra.reiniciarTodo()
+    io.exceptionHandler({ error => throw error })
+    mazmorra.irA("0-1", game.at(3, 8))
+    [game.at(3, 5), game.at(7, 8), game.at(12, 5)].forEach({ posicion => combate.registrar(new Slime(position = posicion)) })
+    const ruta = combate.caminoAlJugador(game.at(12, 5))
+    assert.equals(game.at(12, 5), ruta.first())
+    assert.equals(1, combate.distancia(ruta.last(), jugador.position()))
+    assert.equals(12, ruta.size())
+    assert.that(combate.celdasExploradas() <= 24)
+    ruta.drop(1).forEach({ celda => assert.that(combate.libreParaEnemigo(celda)) })
+    (1..(ruta.size() - 1)).forEach({ indice => assert.equals(1, combate.distancia(ruta.get(indice - 1), ruta.get(indice))) })
+  }
+
+  test "si otros slimes ya rodean al jugador el que no puede llegar cede el turno" {
+    mazmorra.reiniciarTodo()
+    io.exceptionHandler({ error => throw error })
+    mazmorra.irA("0-1", game.at(3, 8))
+    [game.at(2, 8), game.at(4, 8), game.at(3, 7)].forEach({ posicion => combate.registrar(new Slime(position = posicion)) })
+    const bloqueado = new Slime(position = game.at(12, 5))
+    combate.incorporar(bloqueado)
+    jugador.pasarTurno()
+    relojAlSeparar.avanzar(800)
+    assert.equals(game.at(12, 5), bloqueado.position())
+    assert.equals(0, combate.celdasExploradas())
+    assert.equals(jugador, combate.participanteActual())
+    assert.notThat(jugador.enEspera())
+    assert.equals(3, jugador.vida())
+  }
+
+  test "alejarse hasta arriba a la izquierda devuelve el turno despues del slime 3" {
+    mazmorra.reiniciarTodo()
+    io.exceptionHandler({ error => throw error })
+    mazmorra.irA("0-1", game.at(7, 7))
+    sala.actual().encenderLuz()
+    relojAlSeparar.avanzar(1800)
+    jugador.moverIzquierda()
+    jugador.moverIzquierda()
+    jugador.seleccionarHabilidad(1)
+    jugador.moverAbajo()
+    jugador.pasarTurno()
+    relojAlSeparar.avanzar(3500)
+    assert.equals(jugador, combate.participanteActual())
+    assert.equals(3, jugador.vida())
+    jugador.moverArriba()
+    jugador.moverIzquierda()
+    jugador.moverIzquierda()
+    assert.equals(game.at(3, 8), jugador.position())
+    jugador.pasarTurno()
+    relojAlSeparar.avanzar(2000)
+    assert.notThat(combate.participanteActual() == sala.actual().slimes().get(2))
+    relojAlSeparar.avanzar(1800)
+    assert.equals(jugador, combate.participanteActual())
+    assert.notThat(jugador.enEspera())
+    assert.equals(3, combate.ronda())
+  }
+}

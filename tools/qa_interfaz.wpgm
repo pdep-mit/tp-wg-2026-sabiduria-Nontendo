@@ -1,0 +1,40 @@
+import wollok.game.*
+import sala.*
+import personajes.*
+import combate.*
+import interfaz.*
+
+// Exporta los visuales reales del motor para revisar la composicion sin navegador.
+object capturaInterfaz {
+  method exportar(nombre) {
+    console.println("ESCENA|" + nombre + "|" + game.boardGround())
+    game.allVisuals().forEach({ visual =>
+      if ([cartelEstado, vistaCombate].contains(visual)) {
+        console.println("TEXTO|" + visual.position().x() + "|" + visual.position().y() + "|" + visual.textColor() + "|" + visual.text().split("\n").join("~"))
+      } else {
+        console.println("IMAGEN|" + visual.position().x() + "|" + visual.position().y() + "|" + visual.image())
+      }
+    })
+  }
+}
+
+program VistaInterfaz {
+  game.width(16)
+  game.height(12)
+  game.cellSize(48)
+  mazmorra.reiniciarTodo()
+  mazmorra.irA("0-1", game.at(14, 4))
+  capturaInterfaz.exportar("oscuridad")
+  jugador.position(game.at(7, 7))
+  sala.interactuar()
+  capturaInterfaz.exportar("panel")
+  ["1", "D", "2", "A", "3", "F", "4", "S"].forEach({ tecla => sala.presionarCable(tecla) })
+  const inicio = io.currentTime()
+  (1..17).forEach({ paso => io.flushEvents(inicio + paso * 100) })
+  jugador.position(game.at(4, 3))
+  jugador.seleccionarHabilidad(1)
+  capturaInterfaz.exportar("ataque")
+  jugador.cancelarAtaque()
+  jugador.pasarTurno()
+  capturaInterfaz.exportar("enemigo")
+}

@@ -1,0 +1,123 @@
+import wollok.game.*
+import sala.*
+import personajes.*
+import combate.*
+import interfaz.*
+
+describe "Combate visible" {
+  test "los tres corazones quedan sobre la oscuridad antes y despues de encender la luz" {
+    mazmorra.reiniciarTodo()
+    mazmorra.irA("0-1", game.at(14, 4))
+    const hud = interfaz.elementos()
+    assert.equals(hud, game.allVisuals().drop(game.allVisuals().size() - hud.size()))
+    assert.equals(3, interfaz.corazones().size())
+    assert.that(interfaz.corazones().all({ corazon => corazon.position().y() == 11 and game.hasVisual(corazon) }))
+    jugador.position(game.at(7, 7))
+    sala.interactuar()
+    assert.equals("cables", interfaz.acciones().first().estado())
+    assert.equals(hud, game.allVisuals().drop(game.allVisuals().size() - hud.size()))
+    ["1", "D", "2", "A", "3", "F", "4", "S"].forEach({ tecla => sala.presionarCable(tecla) })
+    assert.equals("aparicion", interfaz.acciones().first().estado())
+    const inicio = io.currentTime()
+    (1..17).forEach({ paso => io.flushEvents(inicio + paso * 100) })
+    assert.that(jugador.enCombate())
+    assert.equals(hud, game.allVisuals().drop(game.allVisuals().size() - hud.size()))
+    assert.equals("supernivel/accion-2-bloqueado.png", interfaz.acciones().get(1).image())
+  }
+
+  test "el HUD identifica el enemigo activo y recupera los recursos en la ronda siguiente" {
+    mazmorra.iniciarDemoAnterior()
+    const enemigo = new Enemigo(position = game.at(6, 2))
+    enemigo.aparecer()
+    combate.comenzarEncuentro()
+    assert.equals(1, combate.ronda())
+    assert.that(vistaCombate.text().contains("TU TURNO"))
+    jugador.pasarTurno()
+    assert.that(vistaCombate.text().contains("TURNO ENEMIGO"))
+    assert.that(vistaCombate.text().contains(enemigo.nombreCombate()))
+    assert.that(indicadorTurnoEnemigo.visible())
+    assert.equals(enemigo.position(), indicadorTurnoEnemigo.position())
+    assert.that(interfaz.acciones().all({ tarjeta => tarjeta.estado() == "espera" }))
+    const inicio = io.currentTime()
+    (1..12).forEach({ paso => io.flushEvents(inicio + paso * 100) })
+    assert.equals(2, combate.ronda())
+    assert.notThat(jugador.enEspera())
+    assert.notThat(indicadorTurnoEnemigo.visible())
+    assert.that(vistaCombate.text().contains("-0.5"))
+    assert.equals(3, jugador.pasosRestantes())
+    assert.that(jugador.ataqueDisponible())
+  }
+
+  test "fallar conserva el ataque seleccionado y Esc permite volver a moverse" {
+    mazmorra.iniciarDemoAnterior()
+    combate.incorporar(new Enemigo(position = game.at(6, 2)))
+    jugador.seleccionarHabilidad(1)
+    jugador.moverIzquierda()
+    assert.equals(game.at(2, 2), jugador.position())
+    assert.equals(jugador.habilidades().first(), jugador.habilidadSeleccionada())
+    assert.that(jugador.ataqueDisponible())
+    assert.equals(3, jugador.pasosRestantes())
+    assert.equals("seleccionado", interfaz.acciones().first().estado())
+    assert.that(vistaCombate.text().contains("Sin objetivo"))
+    jugador.cancelarAtaque()
+    assert.equals(null, jugador.habilidadSeleccionada())
+    jugador.moverDerecha()
+    assert.equals(game.at(3, 2), jugador.position())
+    assert.equals(2, jugador.pasosRestantes())
+  }
+
+  test "el alcance visible se corta en paredes y en el primer enemigo" {
+    mazmorra.iniciarDemoAnterior()
+    jugador.position(game.at(9, 2))
+    combate.incorporar(new Enemigo(position = game.at(11, 2)))
+    jugador.seleccionarHabilidad(2)
+    assert.notThat(combate.alcanceVisible("derecha", 1))
+    assert.notThat(combate.alcanceVisible("derecha", 2))
+    mazmorra.iniciarDemoAnterior()
+    combate.incorporar(new Enemigo(position = game.at(4, 2)))
+    jugador.seleccionarHabilidad(2)
+    assert.that(combate.alcanceVisible("derecha", 1))
+    assert.that(combate.alcanceVisible("derecha", 2))
+    assert.notThat(combate.alcanceVisible("derecha", 3))
+    const objetivo = interfaz.alcances().find({ marca => marca.direccion() == "derecha" and marca.distancia() == 2 })
+    assert.equals("supernivel/objetivo-ataque.png", objetivo.image())
+    jugador.cancelarAtaque()
+    assert.equals("zelda/transparente.png", objetivo.image())
+  }
+
+  test "la barra de vida acompana al enemigo herido y desaparece al derrotarlo" {
+    mazmorra.iniciarDemoAnterior()
+    const enemigo = new Enemigo(position = game.at(3, 2), vida = 5)
+    enemigo.aparecer()
+    combate.comenzarEncuentro()
+    assert.that(game.hasVisual(enemigo.barraVida()))
+    assert.equals(5, enemigo.vidaMaxima())
+    assert.equals("supernivel/vida-enemigo-8.png", enemigo.barraVida().image())
+    jugador.seleccionarHabilidad(1)
+    jugador.moverDerecha()
+    assert.equals("supernivel/vida-enemigo-5.png", enemigo.barraVida().image())
+    assert.that(vistaCombate.text().contains("recibe -2"))
+    enemigo.position(game.at(4, 2))
+    assert.equals(enemigo.position().up(1).right(0.083333), enemigo.barraVida().position())
+    enemigo.recibirDanio(10)
+    combate.verificarFinal()
+    assert.notThat(game.hasVisual(enemigo.barraVida()))
+    assert.notThat(indicadorTurnoEnemigo.visible())
+  }
+
+  test "sin acciones se destaca terminar turno y un arco bloqueado no deja seleccionado el golpe" {
+    mazmorra.reiniciarTodo()
+    const enemigo = new Enemigo(position = game.at(12, 7))
+    combate.incorporar(enemigo)
+    jugador.seleccionarHabilidad(1)
+    jugador.seleccionarHabilidad(2)
+    assert.equals("bloqueado", interfaz.acciones().get(1).estado())
+    assert.equals(null, jugador.habilidadSeleccionada())
+    (1..3).forEach({ paso => jugador.moverArriba() })
+    enemigo.position(jugador.position().up(1))
+    jugador.seleccionarHabilidad(1)
+    jugador.moverArriba()
+    assert.equals("usado", interfaz.acciones().first().estado())
+    assert.equals("urgente", interfaz.acciones().last().estado())
+  }
+}

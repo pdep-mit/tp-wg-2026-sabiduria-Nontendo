@@ -3,12 +3,11 @@ import configuraciones.*
 import sala.*
 
 program NombreDeJuego {
-  game.title("Nontendo | La sala de los tres sellos + La sala del apagon | Checkpoint 2")
+  game.title("La Leyenda de Celda | Mazmorra de lava y medallon")
   game.height(12)
   game.width(16)
   game.cellSize(48)
   mazmorra.configurarAlLimpiar({ configuracion.movimientos() })
-  sala.iniciar()
-  configuracion.movimientos()
+  mazmorra.reiniciarTodo()
   game.start()
 }
